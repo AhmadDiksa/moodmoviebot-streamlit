@@ -1,0 +1,34 @@
+# ====================== STREAMLIT CLOUD REQUIREMENTS ======================
+# Optimized untuk Streamlit Cloud deployment
+# Last updated: 2025-01-10
+# ==========================================================================
+
+# Core Framework
+streamlit==1.52.1
+
+# Image processing (dependency of streamlit, pinned for compatibility)
+pillow>=7.1.0,<13
+
+# LangChain & LLM
+langchain>=0.1.13
+langchain-google-genai>=0.0.11
+langchain-core>=0.1.33
+google-generativeai>=0.4.1
+
+# Vector Database
+qdrant-client>=1.8.0
+
+# Data Validation
+pydantic>=2.6.0
+pydantic-core>=2.16.0
+
+# Utilities
+python-dotenv>=1.0.0
+typing-extensions>=4.9.0
+
+# Optional: Untuk analytics (uncomment jika diperlukan)
+# pandas>=2.2.0
+# plotly>=5.19.0
+
+# Optional: Untuk error tracking (uncomment jika diperlukan)
+# sentry-sdk>=1.40.0

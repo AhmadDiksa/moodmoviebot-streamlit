@@ -1,0 +1,36 @@
+[theme]
+# Custom theme sesuai dengan app design
+primaryColor = "#667eea"
+backgroundColor = "#0e1117"
+secondaryBackgroundColor = "#262730"
+textColor = "#ffffff"
+font = "sans serif"
+
+[server]
+# Server configuration
+headless = true
+runOnSave = true
+port = 8501
+enableCORS = false
+enableXsrfProtection = true
+maxUploadSize = 200
+enableWebsocketCompression = true
+
+[browser]
+# Browser configuration
+gatherUsageStats = false
+serverAddress = "localhost"
+serverPort = 8501
+
+[client]
+# Client configuration
+showErrorDetails = true
+toolbarMode = "minimal"
+
+[runner]
+# Runner configuration
+magicEnabled = true
+installTracer = false
+fixMatplotlib = true
+postScriptGC = true
+fastReruns = true
