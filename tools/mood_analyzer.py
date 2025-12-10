@@ -5,7 +5,7 @@ File: tools/mood_analyzer.py
 
 import json
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 from core.llm_manager import LLMManager
 from utils.cache_utils import cache_result
 from config.settings import MOOD_OPTIONS, GENRE_OPTIONS
@@ -24,12 +24,13 @@ class MoodAnalyzer:
         """
         self.llm_manager = llm_manager
     
-    def analyze(self, text: str) -> Dict[str, Any]:
+    def analyze(self, text: str, conversation_history: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
         """
-        Analyze mood from text
+        Analyze mood from text with optional conversation context
         
         Args:
             text: User's text describing their mood/feelings
+            conversation_history: Optional list of previous messages for context
         
         Returns:
             Dictionary with mood analysis
@@ -39,25 +40,31 @@ class MoodAnalyzer:
         
         logger.info(f"Analyzing mood from text (length: {len(text)} chars)")
         logger.debug(f"Input text: {text[:100]}...")
+        if conversation_history:
+            logger.debug(f"Using conversation history - {len(conversation_history)} previous messages")
         
         try:
-            # Try to get from cache first
-            logger.debug("Checking cache for mood analysis...")
-            cached = self._get_cached_analysis(text)
-            if cached:
-                duration = time.time() - start_time
-                logger.info(f"Using cached mood analysis (retrieved in {duration:.3f}s)")
-                logger.debug(f"Cached result: {cached.get('detected_moods', [])}")
-                return cached
+            # Try to get from cache first (only if no conversation history to ensure context-aware analysis)
+            if not conversation_history:
+                logger.debug("Checking cache for mood analysis...")
+                cached = self._get_cached_analysis(text)
+                if cached:
+                    duration = time.time() - start_time
+                    logger.info(f"Using cached mood analysis (retrieved in {duration:.3f}s)")
+                    logger.debug(f"Cached result: {cached.get('detected_moods', [])}")
+                    return cached
             
             # Generate prompt
             logger.debug("Building prompt for LLM...")
-            prompt = self._build_prompt(text)
+            prompt = self._build_prompt(text, conversation_history)
             logger.debug(f"Prompt length: {len(prompt)} chars")
             
-            # Invoke LLM
+            # Invoke LLM with conversation history
             logger.debug("Invoking LLM for mood analysis...")
-            response = self.llm_manager.invoke_with_retry(prompt)
+            response = self.llm_manager.invoke_with_retry(
+                prompt, 
+                conversation_history=conversation_history
+            )
             logger.debug(f"LLM response received (length: {len(response)} chars)")
             
             # Parse response
@@ -65,9 +72,10 @@ class MoodAnalyzer:
             result = self._parse_response(response)
             logger.debug(f"Parsed result: {result}")
             
-            # Cache result
-            logger.debug("Caching analysis result...")
-            self._cache_analysis(text, result)
+            # Cache result (only if no conversation history)
+            if not conversation_history:
+                logger.debug("Caching analysis result...")
+                self._cache_analysis(text, result)
             
             duration = time.time() - start_time
             moods = result.get('detected_moods', [])
@@ -85,11 +93,28 @@ class MoodAnalyzer:
             logger.info(f"Fallback analysis result: {fallback_result.get('detected_moods', [])}")
             return fallback_result
     
-    def _build_prompt(self, text: str) -> str:
-        """Build prompt for LLM"""
+    def _build_prompt(self, text: str, conversation_history: Optional[List[Dict[str, str]]] = None) -> str:
+        """Build prompt for LLM with optional conversation context"""
+        context_section = ""
+        
+        if conversation_history and len(conversation_history) > 0:
+            # Build context from conversation history
+            context_lines = []
+            context_lines.append("\nKonteks percakapan sebelumnya:")
+            for msg in conversation_history[-5:]:  # Last 5 messages for context
+                role = msg.get("role", "").lower()
+                content = msg.get("content", "")
+                if role == "user":
+                    context_lines.append(f"User: {content[:200]}")  # Limit length
+                elif role == "assistant":
+                    context_lines.append(f"Assistant: {content[:200]}")
+            context_section = "\n".join(context_lines)
+            context_section += "\n\nGunakan konteks percakapan sebelumnya untuk memahami follow-up question atau perubahan mood pengguna."
+        
         return f"""Analisis mood dari teks berikut dan kembalikan HANYA JSON (tanpa markdown atau komentar):
 
-Teks pengguna: {text}
+Teks pengguna saat ini: {text}
+{context_section}
 
 Format JSON yang harus dikembalikan:
 {{
@@ -104,7 +129,7 @@ Panduan:
 - detected_moods: pilih 1-3 mood dari: {', '.join(MOOD_OPTIONS)}
 - intensity_score: 0 (sangat ringan) sampai 100 (sangat kuat)
 - emotion_type: pilih salah satu: positive, neutral, atau negative
-- summary: respon yang empati dan hangat dalam bahasa Indonesia
+- summary: respon yang empati dan hangat dalam bahasa Indonesia, pertimbangkan konteks percakapan jika ada
 - recommended_genres: 2-4 genre dari: {', '.join(GENRE_OPTIONS)}
 
 PENTING: Kembalikan HANYA JSON tanpa markdown atau text tambahan!"""

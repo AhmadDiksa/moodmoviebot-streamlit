@@ -4,10 +4,10 @@ File: core/llm_manager.py
 """
 
 import streamlit as st
-from typing import Optional
+from typing import Optional, List, Dict
 import logging
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, BaseMessage
 from config.settings import AppConfig
 
 logger = logging.getLogger(__name__)
@@ -53,14 +53,16 @@ class LLMManager:
     def invoke(
         self, 
         prompt: str, 
-        system_message: Optional[str] = None
+        system_message: Optional[str] = None,
+        conversation_history: Optional[List[Dict[str, str]]] = None
     ) -> str:
         """
-        Invoke LLM with prompt
+        Invoke LLM with prompt and optional conversation history
         
         Args:
             prompt: User prompt
             system_message: Optional system message
+            conversation_history: Optional list of previous messages in format [{"role": "user/assistant", "content": "..."}]
         
         Returns:
             LLM response text
@@ -74,6 +76,8 @@ class LLMManager:
         logger.debug(f"Invoking LLM - Prompt length: {len(prompt)} chars")
         if system_message:
             logger.debug(f"System message provided (length: {len(system_message)} chars)")
+        if conversation_history:
+            logger.debug(f"Conversation history provided - {len(conversation_history)} previous messages")
         
         try:
             messages = []
@@ -81,9 +85,20 @@ class LLMManager:
             if system_message:
                 messages.append(SystemMessage(content=system_message))
             
+            # Add conversation history if provided
+            if conversation_history:
+                for msg in conversation_history:
+                    role = msg.get("role", "").lower()
+                    content = msg.get("content", "")
+                    if role == "user":
+                        messages.append(HumanMessage(content=content))
+                    elif role == "assistant":
+                        messages.append(AIMessage(content=content))
+            
+            # Add current prompt
             messages.append(HumanMessage(content=prompt))
             
-            logger.debug(f"Sending {len(messages)} messages to LLM...")
+            logger.debug(f"Sending {len(messages)} messages to LLM (including history)...")
             response = self.llm.invoke(messages)
             
             duration = time.time() - start_time
@@ -104,6 +119,7 @@ class LLMManager:
         self, 
         prompt: str, 
         system_message: Optional[str] = None,
+        conversation_history: Optional[List[Dict[str, str]]] = None,
         max_retries: int = 3
     ) -> str:
         """
@@ -112,6 +128,7 @@ class LLMManager:
         Args:
             prompt: User prompt
             system_message: Optional system message
+            conversation_history: Optional conversation history
             max_retries: Maximum retry attempts
         
         Returns:
@@ -129,7 +146,7 @@ class LLMManager:
         for attempt in range(max_retries):
             try:
                 logger.debug(f"Attempt {attempt + 1}/{max_retries}...")
-                result = self.invoke(prompt, system_message)
+                result = self.invoke(prompt, system_message, conversation_history)
                 overall_duration = time.time() - overall_start
                 logger.info(f"LLM invocation succeeded on attempt {attempt + 1} (total time: {overall_duration:.2f}s)")
                 return result

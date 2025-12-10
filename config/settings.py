@@ -59,17 +59,17 @@ class AppConfig:
             self.QDRANT_API_KEY
         )
 
-# Color scheme
+# Color scheme - Netflix Red Theme
 class Colors:
-    """App color scheme"""
-    PRIMARY = "#667eea"
-    SECONDARY = "#764ba2"
+    """App color scheme - Netflix Red"""
+    PRIMARY = "#E50914"  # Netflix Red
+    SECONDARY = "#B20710"  # Darker Netflix Red
     BACKGROUND = "#0e1117"
     CARD_BG = "rgba(255, 255, 255, 0.1)"
     TEXT = "#ffffff"
     SUCCESS = "#10b981"
     WARNING = "#f59e0b"
-    ERROR = "#ef4444"
+    ERROR = "#E50914"  # Use Netflix red for errors too
 
 # Mood options
 MOOD_OPTIONS = [

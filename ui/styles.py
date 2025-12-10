@@ -12,9 +12,9 @@ def get_custom_css() -> str:
     """
     return """
     <style>
-        /* ===== Main Theme ===== */
+        /* ===== Main Theme - Netflix Red ===== */
         .main {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #E50914 0%, #B20710 100%);
         }
         
         /* ===== Chat Messages ===== */
@@ -32,22 +32,22 @@ def get_custom_css() -> str:
             backdrop-filter: blur(10px);
         }
         
-        /* ===== Buttons ===== */
+        /* ===== Buttons - Netflix Red ===== */
         .stButton>button {
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(90deg, #E50914 0%, #B20710 100%);
             color: white;
             border: none;
             border-radius: 8px;
             padding: 10px 20px;
             font-weight: bold;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 4px 15px rgba(229, 9, 20, 0.4);
         }
         
         .stButton>button:hover {
-            background: linear-gradient(90deg, #764ba2 0%, #667eea 100%);
+            background: linear-gradient(90deg, #B20710 0%, #E50914 100%);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            box-shadow: 0 6px 20px rgba(229, 9, 20, 0.6);
         }
         
         .stButton>button:active {
@@ -107,9 +107,9 @@ def get_custom_css() -> str:
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
         
-        /* ===== Metric Cards ===== */
+        /* ===== Metric Cards - Netflix Red ===== */
         .metric-card {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
+            background: linear-gradient(135deg, rgba(229, 9, 20, 0.3) 0%, rgba(178, 7, 16, 0.3) 100%);
             border-radius: 12px;
             padding: 15px;
             text-align: center;
@@ -120,7 +120,7 @@ def get_custom_css() -> str:
         
         .metric-card:hover {
             transform: scale(1.05);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 8px 25px rgba(229, 9, 20, 0.4);
         }
         
         /* ===== Headers ===== */
@@ -154,8 +154,8 @@ def get_custom_css() -> str:
         }
         
         .stTextInput>div>div>input:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+            border-color: #E50914;
+            box-shadow: 0 0 0 2px rgba(229, 9, 20, 0.3);
         }
         
         /* ===== Multiselect ===== */
@@ -171,9 +171,9 @@ def get_custom_css() -> str:
             color: white !important;
         }
         
-        /* ===== Progress Bar ===== */
+        /* ===== Progress Bar - Netflix Red ===== */
         .stProgress>div>div>div>div {
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(90deg, #E50914 0%, #B20710 100%);
         }
         
         /* ===== Tabs ===== */
@@ -193,7 +193,7 @@ def get_custom_css() -> str:
         }
         
         .stTabs [aria-selected="true"] {
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(90deg, #E50914 0%, #B20710 100%);
         }
         
         /* ===== Animations ===== */
@@ -223,17 +223,17 @@ def get_custom_css() -> str:
         }
         
         ::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(180deg, #E50914 0%, #B20710 100%);
             border-radius: 10px;
         }
         
         ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(180deg, #764ba2 0%, #667eea 100%);
+            background: linear-gradient(180deg, #B20710 0%, #E50914 100%);
         }
         
-        /* ===== Loading Spinner ===== */
+        /* ===== Loading Spinner - Netflix Red ===== */
         .stSpinner>div {
-            border-top-color: #667eea !important;
+            border-top-color: #E50914 !important;
         }
         
         /* ===== Tooltips ===== */

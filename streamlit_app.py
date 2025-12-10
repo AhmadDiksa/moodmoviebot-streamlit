@@ -243,6 +243,23 @@ def main():
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
     
+    # Display movie recommendations if available (persist cards after processing)
+    if st.session_state.get('recommendations') and len(st.session_state.recommendations) > 0:
+        logger.debug(f"Displaying {len(st.session_state.recommendations)} persisted movie recommendations")
+        st.markdown("---")
+        st.markdown("### 🎬 Recommended Movies")
+        
+        for idx, movie in enumerate(st.session_state.recommendations, 1):
+            logger.debug(f"Displaying persisted movie {idx}/{len(st.session_state.recommendations)}: {movie.get('title', 'Unknown')}")
+            # Display movie card
+            display_movie_card(movie, idx)
+            
+            # Display review if available
+            if movie.get('review_summary'):
+                st.markdown(f"**💬 Netizen:** {movie.get('review_summary')}")
+            
+            st.markdown("---")
+    
     # Chat input
     if prompt := st.chat_input("Tell me how you're feeling today..."):
         logger.info(f"User input received: {prompt[:100]}...")
@@ -282,10 +299,15 @@ def handle_user_input(
         with st.spinner("🤔 Analyzing your mood..."):
             
             try:
-                # Step 1: Analyze mood
+                # Step 1: Analyze mood with conversation history
                 logger.info("Step 1: Analyzing mood...")
                 mood_start = time.time()
-                mood_result = mood_analyzer.analyze(user_input)
+                
+                # Get conversation history (exclude the current message we just added)
+                conversation_history = st.session_state.messages[:-1] if len(st.session_state.messages) > 1 else []
+                logger.debug(f"Using {len(conversation_history)} previous messages as context")
+                
+                mood_result = mood_analyzer.analyze(user_input, conversation_history=conversation_history)
                 mood_duration = time.time() - mood_start
                 logger.info(f"Mood analysis completed in {mood_duration:.2f}s - Moods: {mood_result.get('detected_moods', [])}")
                 
@@ -312,12 +334,9 @@ def handle_user_input(
                     logger.info(f"Movie search completed in {search_duration:.2f}s - Found {len(movies)} movies")
                 
                 if movies:
-                    # Save recommendations
-                    logger.debug(f"Saving {len(movies)} recommendations to session...")
-                    SessionManager.add_recommendations(movies)
-                    
-                    # Display each movie with review summary
+                    # Process each movie with review summary first
                     logger.debug("Processing movie reviews...")
+                    processed_movies = []
                     for idx, movie in enumerate(movies, 1):
                         logger.debug(f"Processing movie {idx}/{len(movies)}: {movie.get('title', 'Unknown')}")
                         # Get review summary
@@ -329,6 +348,7 @@ def handle_user_input(
                         
                         # Add review to movie dict
                         movie['review_summary'] = review_summary
+                        processed_movies.append(movie)
                         
                         # Display movie card
                         display_movie_card(movie, idx)
@@ -336,6 +356,10 @@ def handle_user_input(
                         # Display review
                         st.markdown(f"**💬 Netizen:** {review_summary}")
                         st.markdown("---")
+                    
+                    # Save processed recommendations (with review summaries) to session
+                    logger.debug(f"Saving {len(processed_movies)} processed recommendations to session...")
+                    SessionManager.add_recommendations(processed_movies)
                     
                     response_text = f"Found {len(movies)} great movies for you! Check them out above 👆"
                     logger.info(f"Successfully displayed {len(movies)} movie recommendations")

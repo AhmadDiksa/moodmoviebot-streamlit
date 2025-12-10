@@ -1,6 +1,6 @@
 [theme]
-# Custom theme sesuai dengan app design
-primaryColor = "#667eea"
+# Custom theme - Netflix Red
+primaryColor = "#E50914"
 backgroundColor = "#0e1117"
 secondaryBackgroundColor = "#262730"
 textColor = "#ffffff"
