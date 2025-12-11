@@ -40,7 +40,7 @@ class MovieSearcher:
     def search_by_genres(
         self, 
         genre_names: List[str],
-        limit: int = 5,
+        limit: int = 3,
         personalize: bool = True,
         context_hash: str = None,
         query_text: Optional[str] = None
