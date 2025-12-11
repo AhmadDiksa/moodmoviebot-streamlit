@@ -151,10 +151,6 @@ def show_setup_popup():
         st.session_state.setup_model = MODEL_OPTIONS["groq"][0]
     if 'setup_llm_api_key' not in st.session_state:
         st.session_state.setup_llm_api_key = ""
-    if 'setup_qdrant_url' not in st.session_state:
-        st.session_state.setup_qdrant_url = ""
-    if 'setup_qdrant_key' not in st.session_state:
-        st.session_state.setup_qdrant_key = ""
     
     # Center the content
     st.markdown("<br>", unsafe_allow_html=True)
@@ -216,24 +212,6 @@ def show_setup_popup():
         )
         st.session_state.setup_llm_api_key = llm_api_key
         
-        # Qdrant configuration
-        st.markdown("---")
-        st.markdown("### 🗄️ Qdrant Configuration")
-        qdrant_url = st.text_input(
-            "**Qdrant URL**",
-            value=st.session_state.setup_qdrant_url,
-            help="Your Qdrant cluster URL (e.g., https://xxx.qdrant.io)"
-        )
-        st.session_state.setup_qdrant_url = qdrant_url
-        
-        qdrant_key = st.text_input(
-            "**Qdrant API Key**",
-            value=st.session_state.setup_qdrant_key,
-            type="password",
-            help="Your Qdrant API key"
-        )
-        st.session_state.setup_qdrant_key = qdrant_key
-        
         # Help links
         with st.expander("📚 Need help getting API keys?"):
             st.markdown(f"""
@@ -241,43 +219,24 @@ def show_setup_popup():
             - **Gemini**: [Google AI Studio](https://makersuite.google.com/app/apikey)
             - **Groq**: [Groq Console](https://console.groq.com/)
             - **OpenAI**: [OpenAI Platform](https://platform.openai.com/api-keys)
-            - **Qdrant**: [Qdrant Cloud](https://cloud.qdrant.io/)
+            
+            **Note:** Qdrant configuration is loaded from `.streamlit/secrets.toml`
             """)
         
         # Save button
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            if st.button("✅ Save & Continue", type="primary", use_container_width=True):
-                # Validate inputs
-                if not llm_api_key:
-                    st.error(f"⚠️ Please enter your {api_key_label}")
-                elif not qdrant_url:
-                    st.error("⚠️ Please enter your Qdrant URL")
-                elif not qdrant_key:
-                    st.error("⚠️ Please enter your Qdrant API Key")
-                else:
-                    # Save to session state
-                    st.session_state.setup_completed = True
-                    st.session_state.config_provider = provider
-                    st.session_state.config_model = model
-                    st.session_state.config_llm_api_key = llm_api_key
-                    st.session_state.config_qdrant_url = qdrant_url
-                    st.session_state.config_qdrant_key = qdrant_key
-                    logger.info(f"Setup completed - Provider: {provider}, Model: {model}")
-                    st.success("✅ Configuration saved! Loading application...")
-                    st.rerun()
-        
-        with col2:
-            if st.button("ℹ️ Use Secrets File", use_container_width=True):
-                st.info("""
-                **For Streamlit Cloud:**
-                1. Go to Settings → Secrets
-                2. Add your keys to `.streamlit/secrets.toml`
-                
-                **For Local Development:**
-                1. Create `.streamlit/secrets.toml` file
-                2. Add your configuration
-                """)
+        if st.button("✅ Save & Continue", type="primary", use_container_width=True):
+            # Validate inputs
+            if not llm_api_key:
+                st.error(f"⚠️ Please enter your {api_key_label}")
+            else:
+                # Save to session state
+                st.session_state.setup_completed = True
+                st.session_state.config_provider = provider
+                st.session_state.config_model = model
+                st.session_state.config_llm_api_key = llm_api_key
+                logger.info(f"Setup completed - Provider: {provider}, Model: {model}")
+                st.success("✅ Configuration saved! Loading application...")
+                st.rerun()
     
     return not st.session_state.setup_completed
 
@@ -318,8 +277,24 @@ def initialize_app():
         elif provider == 'openai':
             config.OPENAI_API_KEY = api_key
         
-        config.QDRANT_URL = st.session_state.get('config_qdrant_url', '')
-        config.QDRANT_API_KEY = st.session_state.get('config_qdrant_key', '')
+        # Qdrant config is ALWAYS loaded from secrets.toml, not from session state
+        try:
+            secrets_config = AppConfig.load_from_secrets()
+            config.QDRANT_URL = secrets_config.QDRANT_URL
+            config.QDRANT_API_KEY = secrets_config.QDRANT_API_KEY
+            logger.debug("Qdrant configuration loaded from secrets.toml")
+        except Exception as e:
+            logger.warning(f"Failed to load Qdrant config from secrets: {e}")
+            # Try direct access to secrets
+            try:
+                config.QDRANT_URL = st.secrets.get("QDRANT_URL", "")
+                config.QDRANT_API_KEY = st.secrets.get("QDRANT_API_KEY", "")
+            except:
+                # Fallback to environment variables
+                import os
+                config.QDRANT_URL = os.getenv("QDRANT_URL", "")
+                config.QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "")
+        
         logger.debug(f"Configuration loaded from session - Provider: {config.LLM_PROVIDER}, Model: {config.MODEL_NAME}")
     else:
         # Try loading from secrets
@@ -350,8 +325,23 @@ def initialize_app():
             elif provider == 'openai':
                 config.OPENAI_API_KEY = api_key
             
-            config.QDRANT_URL = st.session_state.get('config_qdrant_url', '')
-            config.QDRANT_API_KEY = st.session_state.get('config_qdrant_key', '')
+            # Qdrant config is ALWAYS loaded from secrets.toml, not from session state
+            try:
+                secrets_config = AppConfig.load_from_secrets()
+                config.QDRANT_URL = secrets_config.QDRANT_URL
+                config.QDRANT_API_KEY = secrets_config.QDRANT_API_KEY
+                logger.debug("Qdrant configuration loaded from secrets.toml")
+            except Exception as e:
+                logger.warning(f"Failed to load Qdrant config from secrets: {e}")
+                # Try direct access to secrets
+                try:
+                    config.QDRANT_URL = st.secrets.get("QDRANT_URL", "")
+                    config.QDRANT_API_KEY = st.secrets.get("QDRANT_API_KEY", "")
+                except:
+                    # Fallback to environment variables
+                    import os
+                    config.QDRANT_URL = os.getenv("QDRANT_URL", "")
+                    config.QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "")
     
     return config
 
