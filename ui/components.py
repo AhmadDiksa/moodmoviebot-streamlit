@@ -18,6 +18,8 @@ def display_movie_card(movie: Dict[str, Any], index: int):
     """
     # Extract data
     title = movie.get('title', 'Unknown')
+    original_title = movie.get('original_title', '')
+    tmdb_id = movie.get('tmdb_id')
     year = movie.get('year', 'N/A')
     rating = movie.get('rating', 0)
     vote_count = movie.get('vote_count', 0)
@@ -25,7 +27,7 @@ def display_movie_card(movie: Dict[str, Any], index: int):
     overview = movie.get('overview', 'No description available')
     score = movie.get('score', 0)
     
-    # Extract poster and trailer from raw_payload
+    # Extract poster and trailer from raw_payload (from Qdrant database)
     raw_payload = movie.get('raw_payload', {})
     poster_url = raw_payload.get('poster_url') or None
     trailer_url = raw_payload.get('trailer_url') or None
@@ -64,10 +66,20 @@ def display_movie_card(movie: Dict[str, Any], index: int):
             """, unsafe_allow_html=True)
     
     with col2:
-        # Create card HTML
+        # Create card HTML with all fields from database
+        title_display = f"🎬 {index}. {title}"
+        if original_title and original_title != title:
+            title_display += f" <em>({original_title})</em>"
+        title_display += f" ({year})"
+        
+        tmdb_info = ""
+        if tmdb_id:
+            tmdb_info = f"<p><strong>🆔 TMDB ID:</strong> {tmdb_id}</p>"
+        
         st.markdown(f"""
         <div class="movie-card">
-            <h3>🎬 {index}. {title} ({year})</h3>
+            <h3>{title_display}</h3>
+            {tmdb_info}
             <p><strong>⭐ Rating:</strong> {rating}/10 {stars} ({vote_count:,} votes)</p>
             <p><strong>🎭 Genre:</strong> {genre_text}</p>
             <p><strong>📊 Match Score:</strong> {score}/10</p>

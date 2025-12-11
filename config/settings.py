@@ -29,6 +29,10 @@ class AppConfig:
     # Database settings
     COLLECTION_NAME: str = "moodviedb"
     
+    # Embedding & Semantic Search settings
+    EMBEDDING_MODEL_NAME: str = "paraphrase-multilingual-MiniLM-L12-v2"
+    USE_SEMANTIC_SEARCH: bool = True
+    
     # API Keys (loaded from secrets or env)
     # Gemini
     GOOGLE_API_KEY: str = ""

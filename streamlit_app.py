@@ -76,7 +76,10 @@ from ui.chat_components import (
     render_confirmation_prompt,
     render_mood_analysis_inline,
     render_welcome_message,
-    parse_confirmation_response
+    parse_confirmation_response,
+    is_new_search_request,
+    render_loading_with_status,
+    render_loading_with_progress
 )
 from core.history_manager import HistoryManager
 from core.context_manager import ContextManager
@@ -387,6 +390,38 @@ def main():
     review_summarizer = ReviewSummarizer(llm_manager)
     logger.info("All tools initialized successfully")
     
+    # ====================== HANDLE CONFIRMATION RESPONSE ======================
+    # Handle confirmation response FIRST (before rendering UI)
+    # This ensures movie search is called immediately when user clicks "yes"
+    if 'confirmation_response' in st.session_state:
+        response = st.session_state.confirmation_response
+        del st.session_state.confirmation_response
+        
+        if response == "yes":
+            # User approved, proceed with movie search
+            pending = SessionManager.get_pending_confirmation()
+            if pending:
+                logger.info("User approved recommendation, proceeding with movie search")
+                handle_movie_search(
+                    pending.get('genres', []),
+                    pending.get('mood_result', {}),
+                    mood_analyzer,
+                    movie_searcher,
+                    review_summarizer
+                )
+                SessionManager.clear_pending_confirmation()
+                st.rerun()
+        elif response == "no":
+            # User rejected
+            SessionManager.add_message("assistant", "Baik, tidak masalah. Jika Anda ingin melihat rekomendasi film nanti, silakan beri tahu saya!")
+            SessionManager.clear_pending_confirmation()
+            st.rerun()
+        elif response == "change":
+            # User wants to change
+            SessionManager.add_message("assistant", "Baik, genre apa yang ingin Anda tonton? Silakan sebutkan genre atau mood yang Anda inginkan.")
+            SessionManager.clear_pending_confirmation()
+            st.rerun()
+    
     # ====================== SIDEBAR ======================
     with st.sidebar:
         st.markdown("---")
@@ -438,36 +473,6 @@ def main():
     for message in st.session_state.messages:
         render_chat_message(message, show_timestamp=False)
     
-    # Handle confirmation response from buttons
-    if 'confirmation_response' in st.session_state:
-        response = st.session_state.confirmation_response
-        del st.session_state.confirmation_response
-        
-        if response == "yes":
-            # User approved, proceed with movie search
-            pending = SessionManager.get_pending_confirmation()
-            if pending:
-                logger.info("User approved recommendation, proceeding with movie search")
-                handle_movie_search(
-                    pending.get('genres', []),
-                    pending.get('mood_result', {}),
-                    mood_analyzer,
-                    movie_searcher,
-                    review_summarizer
-                )
-                SessionManager.clear_pending_confirmation()
-                st.rerun()
-        elif response == "no":
-            # User rejected
-            SessionManager.add_message("assistant", "Baik, tidak masalah. Jika Anda ingin melihat rekomendasi film nanti, silakan beri tahu saya!")
-            SessionManager.clear_pending_confirmation()
-            st.rerun()
-        elif response == "change":
-            # User wants to change
-            SessionManager.add_message("assistant", "Baik, genre apa yang ingin Anda tonton? Silakan sebutkan genre atau mood yang Anda inginkan.")
-            SessionManager.clear_pending_confirmation()
-            st.rerun()
-    
     # Chat input
     if prompt := st.chat_input("Ceritakan bagaimana perasaan Anda hari ini..."):
         logger.info(f"User input received: {prompt[:100]}...")
@@ -492,9 +497,18 @@ def handle_user_input(
     start_time = time.time()
     logger.info(f"=== Processing user input (length: {len(user_input)}) ===")
     
-    # Check if user is responding to confirmation
+    # Check if user is requesting a new search (not responding to confirmation)
+    # This must be checked BEFORE checking pending_confirmation to avoid false positives
+    is_new_search = is_new_search_request(user_input)
+    if is_new_search:
+        # Clear any pending confirmation and proceed with new mood analysis
+        SessionManager.clear_pending_confirmation()
+        logger.info("User requesting new search, cleared pending confirmation")
+        # Continue with normal flow (mood analysis) - skip confirmation check below
+    
+    # Check if user is responding to confirmation (only if not a new search request)
     pending_confirmation = SessionManager.get_pending_confirmation()
-    if pending_confirmation:
+    if pending_confirmation and not is_new_search:
         # User is responding to confirmation prompt
         logger.info("User responding to confirmation prompt")
         confirmation_response = parse_confirmation_response(user_input)
@@ -562,60 +576,82 @@ def handle_user_input(
     
     # Generate assistant response
     with st.chat_message("assistant"):
-        with st.spinner("🤔 Menganalisis mood Anda..."):
+        try:
+            # Step 1: Analyze mood with conversation history using ContextManager
+            logger.info("Step 1: Analyzing mood...")
             
-            try:
-                # Step 1: Analyze mood with conversation history using ContextManager
-                logger.info("Step 1: Analyzing mood...")
-                mood_start = time.time()
-                
-                # Build context using ContextManager
-                conversation_history = st.session_state.messages[:-1] if len(st.session_state.messages) > 1 else []
-                logger.debug(f"Using {len(conversation_history)} previous messages as context")
-                
-                mood_result = mood_analyzer.analyze(user_input, conversation_history=conversation_history)
-                mood_duration = time.time() - mood_start
-                logger.info(f"Mood analysis completed in {mood_duration:.2f}s - Moods: {mood_result.get('detected_moods', [])}")
-                
-                SessionManager.update_mood(mood_result)
-                
-                # Display mood analysis inline
-                render_mood_analysis_inline(mood_result)
-                
-                # Step 2: Ask for confirmation before searching movies
-                recommended_genres = mood_result.get('recommended_genres', ['Comedy'])
-                mood_summary = mood_result.get('summary', '')
-                
-                logger.info(f"Step 2: Asking for confirmation for genres: {recommended_genres}")
-                
-                # Store pending confirmation
-                SessionManager.set_pending_confirmation({
-                    'genres': recommended_genres,
-                    'mood_result': mood_result
-                })
-                
-                # Display confirmation prompt
-                render_confirmation_prompt(recommended_genres, mood_summary)
-                
-                # Add assistant message with confirmation
-                confirmation_message = f"""**Analisis Mood:**
+            # Show loading status for mood analysis
+            render_loading_with_status(
+                tool_name="Mood Analyzer",
+                status_message="Menganalisis mood Anda...",
+                show_spinner=True
+            )
+            
+            mood_start = time.time()
+            
+            # Build context using ContextManager
+            conversation_history = st.session_state.messages[:-1] if len(st.session_state.messages) > 1 else []
+            logger.debug(f"Using {len(conversation_history)} previous messages as context")
+            
+            mood_result = mood_analyzer.analyze(user_input, conversation_history=conversation_history)
+            mood_duration = time.time() - mood_start
+            logger.info(f"Mood analysis completed in {mood_duration:.2f}s - Moods: {mood_result.get('detected_moods', [])}")
+            
+            # Store user_input in mood_result for semantic search
+            mood_result['user_input'] = user_input
+            
+            SessionManager.update_mood(mood_result)
+            
+            # Clear loading and display mood analysis inline
+            st.empty()  # Clear loading indicator
+            render_mood_analysis_inline(mood_result)
+            
+            # Step 2: Ask for confirmation before searching movies
+            recommended_genres = mood_result.get('recommended_genres', ['Comedy'])
+            mood_summary = mood_result.get('summary', '')
+            
+            logger.info(f"Step 2: Asking for confirmation for genres: {recommended_genres}")
+            
+            # Show preparing status
+            render_loading_with_status(
+                tool_name="Preparing",
+                status_message="Mempersiapkan rekomendasi...",
+                show_spinner=False
+            )
+            
+            # Small delay for visual feedback
+            import time
+            time.sleep(0.3)
+            
+            # Store pending confirmation
+            SessionManager.set_pending_confirmation({
+                'genres': recommended_genres,
+                'mood_result': mood_result
+            })
+            
+            # Clear loading and display confirmation prompt
+            st.empty()  # Clear loading indicator
+            render_confirmation_prompt(recommended_genres, mood_summary)
+            
+            # Add assistant message with confirmation
+            confirmation_message = f"""**Analisis Mood:**
 Mood terdeteksi: {', '.join(mood_result.get('detected_moods', []))}
 Intensitas: {mood_result.get('intensity_score', 0)}%
 
 {mood_summary}
 
 Berdasarkan mood Anda, saya bisa merekomendasikan film dengan genre: {', '.join(recommended_genres)}. Apakah Anda ingin melihat rekomendasi film?"""
-                
-                SessionManager.add_message("assistant", confirmation_message, metadata={
-                    "type": "confirmation",
-                    "genres": recommended_genres,
-                    "mood_result": mood_result
-                })
-                
-                total_duration = time.time() - start_time
-                logger.info(f"=== User input processing completed in {total_duration:.2f}s ===")
-                
-            except Exception as e:
+            
+            SessionManager.add_message("assistant", confirmation_message, metadata={
+                "type": "confirmation",
+                "genres": recommended_genres,
+                "mood_result": mood_result
+            })
+            
+            total_duration = time.time() - start_time
+            logger.info(f"=== User input processing completed in {total_duration:.2f}s ===")
+            
+        except Exception as e:
                 total_duration = time.time() - start_time
                 logger.exception(f"Error processing user input (duration: {total_duration:.2f}s)")
                 logger.error(f"Error details: {type(e).__name__}: {str(e)}")
@@ -633,43 +669,141 @@ def handle_movie_search(
     """
     Handle movie search and display recommendations
     
+    IMPORTANT: This function ONLY uses MovieSearcher which searches Qdrant database.
+    No external APIs (TMDB, OMDB, etc.) are used. No fallback mechanism.
+    
     Args:
         recommended_genres: List of genre names
         mood_result: Mood analysis result
         mood_analyzer: Mood analyzer instance
-        movie_searcher: Movie searcher instance
+        movie_searcher: Movie searcher instance (ONLY uses Qdrant)
         review_summarizer: Review summarizer instance
     """
     import time
     import hashlib
     
-    logger.info(f"Searching movies for genres: {recommended_genres}")
+    # Validate that movie_searcher is available
+    if movie_searcher is None:
+        logger.error("MovieSearcher is None - cannot search movies. Movie search ONLY uses Qdrant.")
+        st.error("❌ Error: Movie search service tidak tersedia. Pastikan Qdrant database terhubung.")
+        SessionManager.clear_pending_confirmation()  # Clear pending confirmation on error
+        return
     
-    with st.spinner("🔍 Mencari film yang sempurna untuk Anda..."):
-        # Create context hash from mood for cache uniqueness
-        context_string = f"{mood_result.get('detected_moods', [])}-{mood_result.get('intensity_score', 0)}-{recommended_genres}"
-        context_hash = hashlib.md5(context_string.encode()).hexdigest()[:12]
-        logger.debug(f"Context hash for search: {context_hash}")
-        
-        search_start = time.time()
-        movies = movie_searcher.search_by_genres(
-            recommended_genres,
-            limit=5,
-            personalize=True,
-            context_hash=context_hash
-        )
-        search_duration = time.time() - search_start
-        logger.info(f"Movie search completed in {search_duration:.2f}s - Found {len(movies)} movies")
+    logger.info(f"Searching movies from Qdrant ONLY for genres: {recommended_genres}")
+    logger.debug("IMPORTANT: Movie search uses ONLY Qdrant database. No external APIs.")
+    
+    # Show loading status for movie search
+    render_loading_with_status(
+        tool_name="Movie Search",
+        status_message="Mencari film yang cocok untuk Anda...",
+        show_spinner=True
+    )
+    
+    # Create context hash from mood for cache uniqueness
+    context_string = f"{mood_result.get('detected_moods', [])}-{mood_result.get('intensity_score', 0)}-{recommended_genres}"
+    context_hash = hashlib.md5(context_string.encode()).hexdigest()[:12]
+    logger.debug(f"Context hash for search: {context_hash}")
+    
+    # Generate query text for semantic search
+    # Format: user input + mood summary + genres
+    user_input = mood_result.get('user_input', '')
+    mood_summary = mood_result.get('summary', '')
+    genres_text = ', '.join(recommended_genres)
+    
+    query_text = None
+    if user_input or mood_summary:
+        query_parts = []
+        if user_input:
+            query_parts.append(user_input)
+        if mood_summary:
+            query_parts.append(f"Mood: {mood_summary}")
+        if genres_text:
+            query_parts.append(f"Looking for: {genres_text}")
+        query_text = ". ".join(query_parts)
+        logger.debug(f"Generated query text for semantic search: {query_text[:100]}...")
+    
+    search_start = time.time()
+    # Search ONLY from Qdrant - no fallback to other sources
+    # Uses hybrid search (semantic + filter) if query_text is provided
+    movies = movie_searcher.search_by_genres(
+        recommended_genres,
+        limit=5,
+        personalize=True,
+        context_hash=context_hash,
+        query_text=query_text
+    )
+    search_duration = time.time() - search_start
+    logger.info(f"Movie search from Qdrant completed in {search_duration:.2f}s - Found {len(movies)} movies")
+    
+    if not movies:
+        logger.warning("No movies found from Qdrant database. No fallback to external APIs.")
+        st.info("Maaf, saya tidak menemukan film yang sesuai di database. Silakan coba dengan genre lain atau pastikan Qdrant database terhubung dengan baik.")
+        SessionManager.add_message("assistant", "Maaf, saya tidak menemukan film yang sesuai di database. Silakan coba dengan genre lain.")
+        SessionManager.clear_pending_confirmation()  # Clear pending confirmation when no movies found
+        return
     
     if movies:
+        # Clear movie search loading
+        st.empty()  # Clear loading indicator
+        
+        # IMPORTANT: Validate that all movies have raw_payload from Qdrant before processing
+        logger.debug("Validating movies from Qdrant before processing...")
+        valid_movies = []
+        invalid_count = 0
+        
+        for movie in movies:
+            # Validate movie has raw_payload (proof it comes from Qdrant)
+            if not movie.get('raw_payload'):
+                logger.warning(f"Movie '{movie.get('title', 'Unknown')}' missing raw_payload from Qdrant. Filtering out.")
+                invalid_count += 1
+                continue
+            
+            # Validate movie has required fields
+            if not movie.get('title'):
+                logger.warning(f"Movie missing title field. Filtering out.")
+                invalid_count += 1
+                continue
+            
+            # Validate raw_payload is a dict (from Qdrant)
+            raw_payload = movie.get('raw_payload')
+            if not isinstance(raw_payload, dict):
+                logger.warning(f"Movie '{movie.get('title', 'Unknown')}' has invalid raw_payload type: {type(raw_payload)}. Filtering out.")
+                invalid_count += 1
+                continue
+            
+            valid_movies.append(movie)
+        
+        if invalid_count > 0:
+            logger.warning(f"Filtered out {invalid_count} invalid movies. Only {len(valid_movies)} valid movies from Qdrant will be processed.")
+        
+        if not valid_movies:
+            logger.error("No valid movies from Qdrant to display. All movies were filtered out.")
+            st.error("❌ Error: Tidak ada film valid dari database Qdrant. Semua film tidak memiliki data yang valid.")
+            SessionManager.add_message("assistant", "Maaf, tidak ada film valid yang ditemukan di database Qdrant.")
+            SessionManager.clear_pending_confirmation()  # Clear pending confirmation when no valid movies
+            return
+        
         # Process each movie with review summary
-        logger.debug("Processing movie reviews...")
+        logger.debug(f"Processing {len(valid_movies)} valid movies from Qdrant...")
         processed_movies = []
         
-        for idx, movie in enumerate(movies, 1):
-            logger.debug(f"Processing movie {idx}/{len(movies)}: {movie.get('title', 'Unknown')}")
+        for idx, movie in enumerate(valid_movies, 1):
+            logger.debug(f"Processing movie {idx}/{len(valid_movies)} from Qdrant: {movie.get('title', 'Unknown')}")
             
-            # Get review summary
+            # Validate again before processing
+            if not movie.get('raw_payload'):
+                logger.error(f"Movie '{movie.get('title', 'Unknown')}' lost raw_payload during processing. Skipping.")
+                continue
+            
+            # Show loading status for review summarization
+            render_loading_with_progress(
+                tool_name="Review Summarizer",
+                status_message="Meringkas review netizen",
+                current=idx,
+                total=len(valid_movies)
+            )
+            
+            # Get review summary from raw_payload (from Qdrant)
             raw_reviews = movie.get('raw_payload', {}).get('raw_reviews')
             if raw_reviews:
                 review_start = time.time()
@@ -680,33 +814,72 @@ def handle_movie_search(
             else:
                 movie['review_summary'] = "Belum ada review dari netizen"
             
-            processed_movies.append(movie)
+            # Final validation before adding to processed list
+            if movie.get('raw_payload'):
+                processed_movies.append(movie)
+            else:
+                logger.error(f"Movie '{movie.get('title', 'Unknown')}' missing raw_payload after processing. Skipping.")
+            
+            # Clear loading indicator after each movie
+            if idx < len(movies):
+                st.empty()  # Clear loading indicator
         
-        # Display movies using chat components
+        # Clear final loading indicator
+        st.empty()
+        
+        # Final validation before displaying: Ensure all movies have raw_payload from Qdrant
+        if not processed_movies:
+            logger.error("No valid movies from Qdrant to display after processing.")
+            st.error("❌ Error: Tidak ada film valid dari database Qdrant setelah diproses.")
+            SessionManager.add_message("assistant", "Maaf, tidak ada film valid yang dapat ditampilkan.")
+            SessionManager.clear_pending_confirmation()  # Clear pending confirmation when no processed movies
+            return
+        
+        # Validate all movies have raw_payload one more time before display
+        final_valid_movies = [m for m in processed_movies if m.get('raw_payload')]
+        if len(final_valid_movies) < len(processed_movies):
+            logger.warning(f"Filtered out {len(processed_movies) - len(final_valid_movies)} movies without raw_payload before display.")
+            processed_movies = final_valid_movies
+        
+        if not processed_movies:
+            logger.error("No valid movies from Qdrant to display after final validation.")
+            st.error("❌ Error: Tidak ada film valid dari database Qdrant setelah validasi akhir.")
+            SessionManager.add_message("assistant", "Maaf, tidak ada film valid yang dapat ditampilkan.")
+            SessionManager.clear_pending_confirmation()  # Clear pending confirmation when no final valid movies
+            return
+        
+        # Display movies using chat components (all from Qdrant)
+        logger.info(f"Displaying {len(processed_movies)} valid movies from Qdrant database")
         render_movie_recommendation(processed_movies)
         
-        # Save processed recommendations to session
-        logger.debug(f"Saving {len(processed_movies)} processed recommendations to session...")
+        # Save processed recommendations to session (all validated from Qdrant)
+        logger.debug(f"Saving {len(processed_movies)} validated recommendations from Qdrant to session...")
         SessionManager.add_recommendations(processed_movies)
         
-        # Add assistant message with recommendations
-        response_text = f"Saya menemukan {len(movies)} film yang cocok untuk Anda! 🎬"
+        # Add assistant message with recommendations (all from Qdrant)
+        response_text = f"Saya menemukan {len(processed_movies)} film yang cocok untuk Anda dari database Qdrant! 🎬"
         st.success(response_text)
         
         SessionManager.add_message("assistant", response_text, metadata={
             "type": "recommendation",
-            "movies": processed_movies,
+            "movies": processed_movies,  # All validated from Qdrant
             "genres": recommended_genres
         })
         
-        logger.info(f"Successfully displayed {len(movies)} movie recommendations")
+        # Clear pending confirmation after successful recommendation display
+        SessionManager.clear_pending_confirmation()
+        logger.debug("Cleared pending confirmation after successful movie recommendation")
+        
+        logger.info(f"Successfully displayed {len(processed_movies)} movie recommendations (all from Qdrant database)")
     
     else:
-        logger.warning("No movies found for recommended genres")
-        response_text = "Maaf, saya tidak menemukan film yang sesuai dengan mood Anda. Coba beri tahu saya lebih spesifik tentang genre atau mood yang Anda inginkan!"
+        # This should not be reached due to check above, but kept for safety
+        logger.warning("No movies found from Qdrant for recommended genres. No fallback to external APIs.")
+        response_text = "Maaf, saya tidak menemukan film yang sesuai di database Qdrant. Silakan coba dengan genre lain atau pastikan database terhubung dengan baik."
         st.info(response_text)
         
         SessionManager.add_message("assistant", response_text)
+        SessionManager.clear_pending_confirmation()  # Clear pending confirmation in safety case
 
 # ====================== FOOTER ======================
 

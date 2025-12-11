@@ -236,6 +236,176 @@ def get_custom_css() -> str:
             border-top-color: #E50914 !important;
         }
         
+        /* ===== Enhanced Loading Animations ===== */
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        
+        @keyframes gradient-shift {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+        
+        @keyframes slide-in {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        /* ===== Tool Status Badge ===== */
+        .tool-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, rgba(229, 9, 20, 0.2) 0%, rgba(178, 7, 16, 0.2) 100%);
+            border: 1px solid rgba(229, 9, 20, 0.4);
+            border-radius: 20px;
+            color: white;
+            font-size: 0.9em;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            animation: slide-in 0.3s ease-out;
+            margin: 5px 0;
+        }
+        
+        .tool-status-badge.active {
+            border-color: #E50914;
+            box-shadow: 0 0 15px rgba(229, 9, 20, 0.5);
+        }
+        
+        .tool-status-badge .tool-icon {
+            font-size: 1.2em;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .tool-status-badge .tool-name {
+            font-weight: 600;
+        }
+        
+        .tool-status-badge .status-message {
+            color: rgba(255, 255, 255, 0.8);
+            font-style: italic;
+        }
+        
+        /* ===== Loading Container ===== */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        /* ===== Progress Steps Indicator ===== */
+        .progress-steps {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        
+        .progress-step {
+            flex: 1;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.6);
+            transition: all 0.3s ease;
+        }
+        
+        .progress-step.active {
+            background: linear-gradient(90deg, #E50914 0%, #B20710 100%);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 0 10px rgba(229, 9, 20, 0.5);
+        }
+        
+        .progress-step.completed {
+            background: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+        
+        /* ===== Enhanced Spinner ===== */
+        .enhanced-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(229, 9, 20, 0.3);
+            border-top-color: #E50914;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        /* ===== Loading Text Animation ===== */
+        .loading-text {
+            animation: pulse 1.5s ease-in-out infinite;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .loading-text::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        
+        @keyframes dots {
+            0%, 20% {
+                content: '.';
+            }
+            40% {
+                content: '..';
+            }
+            60%, 100% {
+                content: '...';
+            }
+        }
+        
+        /* ===== Gradient Loading Bar ===== */
+        .gradient-loading-bar {
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #E50914, #B20710, #E50914);
+            background-size: 200% 100%;
+            animation: gradient-shift 2s ease infinite;
+            border-radius: 2px;
+            margin: 10px 0;
+        }
+        
         /* ===== Tooltips ===== */
         .tooltip {
             position: relative;

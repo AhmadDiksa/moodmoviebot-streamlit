@@ -118,12 +118,67 @@ class SessionManager:
         """
         Add movie recommendations
         
+        IMPORTANT: Only movies with valid raw_payload from Qdrant will be saved.
+        Movies without raw_payload will be filtered out.
+        
         Args:
-            movies: List of movie dictionaries
+            movies: List of movie dictionaries (must have raw_payload from Qdrant)
         """
-        st.session_state.recommendations = movies
-        st.session_state.total_movies_recommended += len(movies)
-        logger.info(f"Added {len(movies)} recommendations")
+        if not movies:
+            logger.warning("Empty movie list provided to add_recommendations. Nothing to add.")
+            return
+        
+        # Validate that all movies have raw_payload from Qdrant
+        valid_movies = []
+        invalid_count = 0
+        
+        for movie in movies:
+            # Validate movie is a dict
+            if not isinstance(movie, dict):
+                logger.warning(f"Invalid movie type: {type(movie)}. Skipping.")
+                invalid_count += 1
+                continue
+            
+            # Validate movie has raw_payload (proof it comes from Qdrant)
+            if not movie.get('raw_payload'):
+                logger.warning(f"Movie '{movie.get('title', 'Unknown')}' missing raw_payload from Qdrant. Filtering out.")
+                invalid_count += 1
+                continue
+            
+            # Validate raw_payload is a dict
+            raw_payload = movie.get('raw_payload')
+            if not isinstance(raw_payload, dict):
+                logger.warning(f"Movie '{movie.get('title', 'Unknown')}' has invalid raw_payload type: {type(raw_payload)}. Filtering out.")
+                invalid_count += 1
+                continue
+            
+            # Validate movie has title
+            if not movie.get('title'):
+                logger.warning(f"Movie missing title field. Filtering out.")
+                invalid_count += 1
+                continue
+            
+            # Validate movie has tmdb_id (required field from Qdrant database)
+            tmdb_id = movie.get('tmdb_id') or raw_payload.get('tmdb_id')
+            if not tmdb_id:
+                logger.warning(f"Movie '{movie.get('title', 'Unknown')}' missing tmdb_id from Qdrant. Filtering out.")
+                invalid_count += 1
+                continue
+            
+            valid_movies.append(movie)
+        
+        if invalid_count > 0:
+            logger.warning(f"Filtered out {invalid_count} invalid movies. Only {len(valid_movies)} valid movies from Qdrant will be saved.")
+        
+        if not valid_movies:
+            logger.error("No valid movies from Qdrant to save. All movies were filtered out.")
+            st.session_state.recommendations = []
+            return
+        
+        # Save only valid movies from Qdrant
+        st.session_state.recommendations = valid_movies
+        st.session_state.total_movies_recommended += len(valid_movies)
+        logger.info(f"Added {len(valid_movies)} validated recommendations from Qdrant (filtered out {invalid_count} invalid movies)")
     
     @staticmethod
     def update_preferences(

@@ -1,0 +1,339 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "saya ingin film tentang kriminal",
+      "timestamp": "2025-12-11T20:01:33.692948"
+    },
+    {
+      "role": "assistant",
+      "content": "**Analisis Mood:**\nMood terdeteksi: netral, adventurous\nIntensitas: 20%\n\nTampaknya Anda tertarik dengan cerita yang penuh teka-teki dan aksi. Film kriminal sering menghadirkan elemen petualangan yang menarik untuk dinikmati.\n\nBerdasarkan mood Anda, saya bisa merekomendasikan film dengan genre: Thriller, Action, Mystery, Drama. Apakah Anda ingin melihat rekomendasi film?",
+      "timestamp": "2025-12-11T20:01:35.743960",
+      "metadata": {
+        "type": "confirmation",
+        "genres": [
+          "Thriller",
+          "Action",
+          "Mystery",
+          "Drama"
+        ],
+        "mood_result": {
+          "detected_moods": [
+            "netral",
+            "adventurous"
+          ],
+          "intensity_score": 20,
+          "emotion_type": "neutral",
+          "summary": "Tampaknya Anda tertarik dengan cerita yang penuh teka-teki dan aksi. Film kriminal sering menghadirkan elemen petualangan yang menarik untuk dinikmati.",
+          "recommended_genres": [
+            "Thriller",
+            "Action",
+            "Mystery",
+            "Drama"
+          ],
+          "user_input": "saya ingin film tentang kriminal"
+        }
+      }
+    },
+    {
+      "role": "user",
+      "content": "ya",
+      "timestamp": "2025-12-11T20:01:40.540947"
+    },
+    {
+      "role": "assistant",
+      "content": "Maaf, saya tidak menemukan film yang sesuai di database. Silakan coba dengan genre lain.",
+      "timestamp": "2025-12-11T20:01:57.108588"
+    },
+    {
+      "role": "user",
+      "content": "saya ingin film tentang kriminal",
+      "timestamp": "2025-12-11T20:02:30.681703"
+    },
+    {
+      "role": "assistant",
+      "content": "**Analisis Mood:**\nMood terdeteksi: adventurous, frustrasi\nIntensitas: 30%\n\nTampaknya Anda masih tertarik dengan film kriminal yang penuh aksi, tetapi mungkin merasa kecewa karena rekomendasi sebelumnya belum memuaskan. Mari coba cari genre lain yang serupa.\n\nBerdasarkan mood Anda, saya bisa merekomendasikan film dengan genre: Thriller, Action, Mystery, Drama. Apakah Anda ingin melihat rekomendasi film?",
+      "timestamp": "2025-12-11T20:02:32.964198",
+      "metadata": {
+        "type": "confirmation",
+        "genres": [
+          "Thriller",
+          "Action",
+          "Mystery",
+          "Drama"
+        ],
+        "mood_result": {
+          "detected_moods": [
+            "adventurous",
+            "frustrasi"
+          ],
+          "intensity_score": 30,
+          "emotion_type": "neutral",
+          "summary": "Tampaknya Anda masih tertarik dengan film kriminal yang penuh aksi, tetapi mungkin merasa kecewa karena rekomendasi sebelumnya belum memuaskan. Mari coba cari genre lain yang serupa.",
+          "recommended_genres": [
+            "Thriller",
+            "Action",
+            "Mystery",
+            "Drama"
+          ],
+          "user_input": "saya ingin film tentang kriminal"
+        }
+      }
+    },
+    {
+      "role": "user",
+      "content": "ya",
+      "timestamp": "2025-12-11T20:02:45.051676"
+    },
+    {
+      "role": "assistant",
+      "content": "Saya menemukan 5 film yang cocok untuk Anda dari database Qdrant! 🎬",
+      "timestamp": "2025-12-11T20:02:59.519683",
+      "metadata": {
+        "type": "recommendation",
+        "movies": [
+          {
+            "title": "The Gangster, the Cop, the Devil",
+            "original_title": "악인전",
+            "tmdb_id": 581528,
+            "year": "2019",
+            "rating": 7.847,
+            "popularity": 8.1056,
+            "vote_count": 1366,
+            "genres": [
+              "Crime",
+              "Action",
+              "Thriller"
+            ],
+            "overview": "After barely surviving a brutal attack by a sadistic serial killer, crime boss Jang Dong-su is left humiliated. Determined to catch the killer known as K, he forms an uneasy alliance with Jung Tae-seok, a relentless and incorruptible detective who often disrupts his illegal business. However, while Jang Dong-su wants K dead, Jung Tae-suk is determined to bring him to justice. With a deal in place—whoever finds K first will decide his fate—the hunt begins, blurring the lines between crime and law.",
+            "score": 4.23,
+            "raw_payload": {
+              "tmdb_id": 581528,
+              "title": "The Gangster, the Cop, the Devil",
+              "original_title": "악인전",
+              "overview": "After barely surviving a brutal attack by a sadistic serial killer, crime boss Jang Dong-su is left humiliated. Determined to catch the killer known as K, he forms an uneasy alliance with Jung Tae-seok, a relentless and incorruptible detective who often disrupts his illegal business. However, while Jang Dong-su wants K dead, Jung Tae-suk is determined to bring him to justice. With a deal in place—whoever finds K first will decide his fate—the hunt begins, blurring the lines between crime and law.",
+              "release_date": "2019-05-15",
+              "genre_ids": [
+                80,
+                28,
+                53
+              ],
+              "vote_average": 7.847,
+              "vote_count": 1366,
+              "popularity": 8.1056,
+              "trailer_url": "https://www.youtube.com/watch?v=D1XANQUYSvk",
+              "poster_url": "https://image.tmdb.org/t/p/w500/oHlM4abRm6BzrRcz9Nup1uidw9H.jpg",
+              "raw_reviews": "Check out my video review here: https://youtu.be/0UPR6YUu1ZM\r\n\r\nI like to think of Asian cinema as having a few very distinct markets. There’s the Japanese – known for their horror, monster and obscure movies. South East Asia gives us very distinct gory horrors and action films, while China, Hong Kong and Taiwan give us a mish-mash of genres – good action films, good horror films, but bland comedies and movies with mostly incoherent storylines.\r\n\r\nBut Korea gives us something more unique – essentially the Asian version of Hollywood. Remarkable horror films like The Host and Train to Busan, popular romantic comedy movies like My Sassy Girl, interest award films like Parasite – and of course the outstanding Sympathy trilogy in Old boy and Sympathy for Mr and Lady Vengeance.\r\n\r\nBut Korean thrillers are something else entirely. And if you enjoyed the spectacular I Saw The Devil – then I am confident you will love every second of The Gangster The Cop The Devil.\r\n\r\nClick here to read more: https://www.theartydans.com/2019/10/the-gangster-cop-devil-korea-2019.html ||| A fast-paced movie that is never less than entertaining and energetic, featuring two engaging leads, hard-hitting action, haunting music – and a humorous twist at the ending.\r\n\r\n10/10",
+              "similarity_score": 0.29007888
+            },
+            "review_summary": "Action on point, dua pemeran seru, musik menggigit! Nonton berkali-kali tanpa bosan!"
+          },
+          {
+            "title": "Lethal Weapon",
+            "original_title": "Lethal Weapon",
+            "tmdb_id": 941,
+            "year": "1987",
+            "rating": 7.284,
+            "popularity": 5.7948,
+            "vote_count": 4834,
+            "genres": [
+              "Adventure",
+              "Action",
+              "Comedy",
+              "Thriller",
+              "Crime"
+            ],
+            "overview": "A veteran cop and an unstable detective become partners who must put their differences aside in order to bring down a heroin-smuggling ring run by ex-Special Forces.",
+            "score": 4.18,
+            "raw_payload": {
+              "tmdb_id": 941,
+              "title": "Lethal Weapon",
+              "original_title": "Lethal Weapon",
+              "overview": "A veteran cop and an unstable detective become partners who must put their differences aside in order to bring down a heroin-smuggling ring run by ex-Special Forces.",
+              "release_date": "1987-03-06",
+              "genre_ids": [
+                12,
+                28,
+                35,
+                53,
+                80
+              ],
+              "vote_average": 7.284,
+              "vote_count": 4834,
+              "popularity": 5.7948,
+              "trailer_url": "https://www.youtube.com/watch?v=RLu49mRcmYs",
+              "poster_url": "https://image.tmdb.org/t/p/w500/6gt44oqb4nE8vflPElffeGwsHVl.jpg",
+              "raw_reviews": "We got the edge Cochise.\r\n\r\nClose to retirement, Detective Sergeant Roger Murtaugh is a bit disturbed to find he's breaking in a new partner. Even more so when it turns out to be fellow Detective Martin Riggs, who since the death of his wife has scant regard for life, his own or those around him.\r\n\r\nLight on plot and character development, Lethal Weapon none the less shines bright as a beacon of how a buddy buddy action film should be done. Roughly an hour and forty five minutes of quips, action, villainy, heroics and cross generational/cultural divides. All what else is needed is a star duo with buoyant chemistry - thankfully  Richard Donner's movie has it by the clip load.\r\n\r\nMel Gibson is Riggs, a trigger happy suspected loony on the ragged edge, wonderfully playing off of Danny Glover's (superb) \"too old for this nonsense\" sage old copper. Riggs is a hard dude who quickly became a cinematic hero to many, an unstoppable force with a quip on the tongue and a glint in his eye, to which Gibson is terrific and perfectly cast.\r\n\r\nGary Busey's \"psycho's are us\" henchman flits in and out the picture with gleeful nastiness and Shane Black's script crackles as the super stunt work starts to take a hold. Chief villain Mitchell Ryan as The General is almost a bystander though, and there's the odd piece of careless editing, but really Lethal Weapon has a winning formula that the box office punters promptly lapped up. \r\n\r\nThree sequels, all of which are of differing quality, would follow it, but this is a template movie for the genre and worthy of nostalgic revisits any time of day. 8/10 ||| One of the best action movies of all-time in my book, and right there with Die Hard, Lethal Weapon still holds up so well thanks to the chemistry between Mel Gibson and Danny Glover. Even with the over-the-top staged fight scene at the end, this is just an all around entertaining flick.\r\n\r\n(Reason I decided to watch it again today was saw it was on A&E and rather than watch a crappy edited version, why not watch the real deal in 1080p HD?) ||| **You’re never too old for this!**\r\n\r\nLethal Weapon is the ultimate buddy cop action movie. Mel Gibson and Danny Glover’s chemistry delights as the crazed young gun and the old experienced cop grow to respect and trust each other. Mel Gibson gives another iconic performance in his catalog of outstanding characters as the quirky and lovable but traumatizing Martin Riggs struggling to find a reason to hope. Danny Glover’s grouchy but endearing Roger Murtaugh is a perfect balance to Riggs. The two develop a loyalty throughout the film that makes the audience invest and care. At its core, Lethal Weapon is an epic action movie where the good guys kick some serious butt! For the 80s, this movie raised the bar for the action genre. My only complaint would be the first few minutes have some nudity that, if left out, would have made this a contender for the ultimate holiday action movie. ||| Yeah, yeah, yeah, I think the PC thing is that I'm not supposed to like this one but I'm supposed to like the horrible TV series instead? Something like that?\r\n\r\nForget about it this is Shane Black at his finest macho shoot 'em up standards. And it's fun.\r\n\r\nTwo cops, two Vietnam vets, two wonderfully colorful characters come together to solve a murder that grows and grows and grows until it becomes appropriately over the top and action packed fun.\r\n\r\nAnd, of course, by over-the-top I mean it spirals into the land of unbelievable in the way that only the finest action movies can deliver. ||| On the face of it, it's a lot like \"Beverly Hill Cop\" (1984) only the chemistry between rookies \"Riggs\" (Mel Gibson) and \"Murtaugh\" (Danny Glover) is way more gritty, sharp and comical. The pair could hardly be more different when they are partnered. The former has a messy history, the latter is older with an unlucky one but when combined this mismatch proves quite effective. Initially it's the murder of a well-connected hooker and daughter of a marine colleague of \"Murtaugh\" from Vietnam that sees the two forced together, but it's not long before the Laurel and Hardy of modern policing are delivering results, especially when they find themselves on the trail of some big-time drug smugglers who are probably implicated in her murder. Not only that, but it appears the criminals are themselves former military and so no easy target for our intrepid, slightly disaster-prone, investigators. Gibson and Glover just click here. They are naturals as they present play polar opposite characters amiably and enthusiastically. There's plenty of smart-mouthed dialogue, loads of action and Gibson's almost maniacal behaviour at times is really quite funny. Of course there's no jeopardy, and yes it does sort of squeal franchise at you, but if what's to come can mirror this fast-paced and entertaining adventure, then bring it on!",
+              "similarity_score": 0.32001805
+            },
+            "review_summary": "Lethal Weapon, buddy cop legenda, chemistry Mel-Danny on point, action seru, wajib nonton berkali-kali!"
+          },
+          {
+            "title": "Se7en",
+            "original_title": "Se7en",
+            "tmdb_id": 807,
+            "year": "1995",
+            "rating": 8.377,
+            "popularity": 15.4156,
+            "vote_count": 22327,
+            "genres": [
+              "Crime",
+              "Mystery",
+              "Thriller"
+            ],
+            "overview": "Two homicide detectives are on a desperate hunt for a serial killer whose crimes are based on the \"seven deadly sins\" in this dark and haunting film that takes viewers from the tortured remains of one victim to the next. The seasoned Det. Somerset researches each sin in an effort to get inside the killer's mind, while his novice partner, Mills, scoffs at his efforts to unravel the case.",
+            "score": 4.18,
+            "raw_payload": {
+              "tmdb_id": 807,
+              "title": "Se7en",
+              "original_title": "Se7en",
+              "overview": "Two homicide detectives are on a desperate hunt for a serial killer whose crimes are based on the \"seven deadly sins\" in this dark and haunting film that takes viewers from the tortured remains of one victim to the next. The seasoned Det. Somerset researches each sin in an effort to get inside the killer's mind, while his novice partner, Mills, scoffs at his efforts to unravel the case.",
+              "release_date": "1995-09-22",
+              "genre_ids": [
+                80,
+                9648,
+                53
+              ],
+              "vote_average": 8.377,
+              "vote_count": 22327,
+              "popularity": 15.4156,
+              "trailer_url": "https://www.youtube.com/watch?v=KPOuJGkpblk",
+              "poster_url": "https://image.tmdb.org/t/p/w500/191nKfP0ehp3uIvWqgPbFmI4lv9.jpg",
+              "raw_reviews": "He's experienced about as much pain and suffering as anyone I've encountered, give or take, and he still has Hell to look forward to. \r\n \r\n\"Warning: Spoilers\"\r\n \r\nSeven is directed by David Fincher and written by Andrew Kevin Walker. It stars Morgan Freeman, Brad Pitt, Gwyneth Paltrow, Kevin Spacey and R. Lee Ermey. Music is scored by Howard Shore and cinematography by Darius Khondji.\r\n\r\nAn unnamed US city and two cops are on the trail of a serial killer who kills his victims according to which one of the seven deadly sins they have committed.\r\n\r\nHaving been stung by the studio interference and negative fall out regarding his directorial debut feature film, Alien 3, David Fincher waited three years before committing to a project that he had control over. The result was Seven, a dark masterpiece of unremitting creeping dread that showcased the work of a clinically excellent director. Seven is not just a movie, it's an experience, an assault on the senses, a jolt to the brain, a trawl through the dark recess of some sick city where it always rains and the darkness holds many fears. This is no boorish slasher movie, it's psychological discord 101, we only see the aftermath of crimes, the discussions of which forces us to delve deep into our own imagination to fill in the blanks, forcing us to go where we don't want to go, you sense the director is somewhere gleefully pulling our strings.\r\n\r\n\"But that's the point. We see a deadly sin on every street corner, in every home, and we tolerate it. We tolerate it because it's common, it's trivial. We tolerate it morning, noon, and night. Well, not anymore. I'm setting the example. What I've done is going to be puzzled over and studied and followed... forever\"\r\n\r\nSeven is very much an ultimate horror film, really is there anything more scary than a serial killer who is smarter than the cops chasing him? Not only that but they are, oblivious as they be, part of the master plan. This killer is not only unstoppable in perpetrating his violent crimes, he is, as Freeman's weary retirement bound Detective Somerset says, methodical and patient. It's going to end bad, the cops know it and so do we, and that's when Fincher and Walker stick their hands into our guts and pull out the last semblance of solids to deliver one of the greatest endings of modern cinema. An ending fit to grace any noir, neo-noir or smart ass psychological horror movie from across the ages. With each viewing of Seven there's the repeating wave of bleak emotions that come as the reversed end credits roll, desolation and disbelief, sadness and shock, our trip through earthly hell is over, but only in the psychical sense!\r\n\r\nFaultless cast performances, no doubt eked out by what we now know is a task-master director, photography that brilliantly brings to \"light\" the melancholic sheen of a decaying society and a Howard Shore score that crawls out of the speakers and cloaks your body like some evil Incubus or Succubus. Seven, a masterpiece of unease and evil wrung out by a master director. 10/10 ||| Se7en put David Fincher on the map with this uber-creepy mystery thriller. The crime scenes are so grisly Seven is often ranked with top horror movies. And the ending -- hoo boy. One of the best twists in modern movie history. ||| If you enjoy reading my Spoiler-Free reviews, please follow my blog @\r\nhttps://www.msbreviews.com\r\n\r\nI've never written or even thought about my favorite movies of all-time. I don't believe in having a definite Top10 or Top20 of every film I've ever seen. However, if I had to write this special list, I have no doubts that Se7en would be there. Obviously, this is a rewatch of the classic movie that impacted filmmaking and launched David Fincher's remarkable career (I also ignore the fact that Alien 3 is connected to Fincher due to the known production issues). With his next film, Mank, coming up on Netflix in a few weeks, I decided to go through part of his filmography. Se7en will be the first out of five Fincher's movies that I will be able to revisit throughout this week.\r\n\r\nI've seen this film countless times, but to be completely honest, I haven't seen it in so long that I didn't remember exactly some important plot points and a key component about the ending. This helped me experience Se7en in a fascinating way once again. Andrew Kevin Walker's screenplay has one of the most intriguing, mysterious, captivating narratives I've ever witnessed, still to this day. From the very beginning to the last second, I'm constantly at the edge of my seat (in this case, my couch) with severe anxiety levels and feeling incredibly tense. Biting my nails, moving my leg up and down, changing positions… it's so mesmerizing that I'm only writing about it more than twenty-four hours after I watched it.\r\n\r\nOne of the most impressive aspects is how Fincher is able to leave the viewer uncomfortable with showing only a single death on-screen. This is an extremely dark, gory, blood-soaked, gruesome flick, packed with horrible displays of dead bodies, but never the actual murder scene. With just a simple photo or a straight line of dialogue, Fincher lets the viewer's imagination do the work, and it's undoubtedly as or more effective than a visually horrific killing sequence. As the premise implies, the serial killer is inspired by the \"seven deadly sins\", and he goes after the respective sinners, killing them (or letting them kill themselves) in an innovative fashion, turning the sin against the sinner.\r\n\r\nThe gluttony and sloth cases are visually brutal, but the lust murder is the one that keeps haunting my memory. The latter is also the less explicit, left to open-minded people to imagine the despicable act. In 1995, a movie with such a dismal environment and dark story couldn't be well-received, and Se7en got its fair share of negative reviews stating that it was too obscure, sinister, overly violent and that the ending was absolutely unacceptable. Over time, it found its success, it gained fans all around the world, and it's now considered by many as one of the greatest films ever made, myself included. From the outstanding cast to the astonishingly enthralling detective work, the third act stands out as one of the most shocking endings of all-time.\r\n\r\nI'm keeping this review spoiler-free because I don't want readers who have not seen this movie to have such a magnificent piece of cinema ruined for them. That's why I'm also hiding a certain actor from the starring section, just like the marketing team did at the original date of release (I'll get there). Fincher's third act is simply flawless. Everything displayed on-screen in the last twenty minutes is filmmaking perfection. From the impressively suspenseful build-up to that jaw-dropping climactic moment, passing through a mind-blowing revelation, Se7en's conclusion is and will remain as one of the most brutally shocking endings in the history of cinema.\r\n\r\nMorgan Freeman and Brad Pitt share fantastic chemistry, portraying two iconic characters that couldn't be more different than one another. Somerset is a notable detective with extreme attention to detail, knowledgeable, and always curious about the case at hand. Freeman incorporates this character effortlessly, delivering a subtle yet powerful performance. Pitt portrays Mills, a childish, unfocused, immature replacement to the previous detective about to retire. Despite its apparent lack of work ethics, Mills is clever, relentless in finding the killer, and desperately wants to prove himself. Pitt, just like Freeman, embodies this persona seamlessly and also gives an outstanding interpretation.\r\n\r\nTechnically, where should I begin? From the haunting score of Howard Shore to the documentary-like cinematography (Darius Khondji) that offers a tremendously realistic atmosphere, it's the phenomenal production design that stands out. Fincher really wanted the dirty, rainy, depressing city to feel authentic and as real as possible. The first dialogues of the film are meant to point out the bleakness and awfulness of the city, but even without these conversations, any viewer will be able to acknowledge the absence of color, joyfulness, and life in this unknown location. Fincher's filmmaking techniques are demonstrated in plain splendor for everyone to see, and this was just his beginning.\r\n\r\nMovies like Se7en are impossible to be made today, period. It would never be conceivable to completely hide one of the main actors from the press tour and/or trailers. We live in a time where the promotion of a film must have everything and everyone. Nowadays, trailers show way too much, and this isn't news to anyone. The ending was forced by Pitt and Fincher since the studio wanted a more mainstream conclusion. Today, filmmakers may have more freedom, but there are still countless cases of executive producers changing a movie without the director's will and/or permission. Se7en was a film released in a time where it should have never been released in the first place. Fortunately, it was.\r\n\r\nSe7en might be the best director's sophomore movie in the history of cinema, and it's undoubtedly one of my favorite films of all-time. David Fincher's classic possesses one of the most captivating screenplays I've ever witnessed, marked by an extremely dark, somber, violent, gruesome story that ends with one of the most emotionally shocking conclusions to a movie, ever. The lack of on-screen death scenes is both the most surprising and effectively powerful element of the whole film, leaving the unpleasant work of imagining a specific type of murder to the viewer's mind. Morgan Freeman and Brad Pitt are extraordinary as the now iconic detectives, delivering two truly brilliant performances. Fincher's trademark filmmaking style started here, as every technical aspect contributes to the movie's incredible realism. From the simple, documentary-like camera work to the ominous score, it's the authentic production design that sets the depressing tone, the bleak atmosphere, and the rainy, colorless, lifeless city. Overall, it's a technically flawless piece of art. One of the greatest films ever made…. I can't recommend it more.\r\n\r\nRating: A+ ||| Some creative kills and a decent atmosphere fail to obscure a vapid nihilism, rather meandering plot with a twist that makes little sense, and some quite nasty misogyny. Basically two or three admittedly masterful performances away from being nothing more than a padded ultra-violent bad Law and Order episode. The Brakhage-inspired title sequence is orders of magnitude better than the film itself. The hodgepodge of contextless references to classic literature doesn't make this any cleverer, either. This is basically everything that people who don't watch \"film bro movies\" unfairly think all modern thrillers are like. Has aged horribly as well. ||| Morgan Freeman is the veteran detective \"Somerset\" who is saddled with the newly married rookie \"Mills\" (Brad Pitt) and sent to investigate quite possibly the most ghastly murder scene cinema has ever produced. A man has been force-fed beans until he, quite literally, burst! A missing slither of kitchen floor lino suggests the fridge had recently been moved and behind that they find a clue - one that suggests this man had committed one of the deadly sins (gluttony) and therefore it's reasonable to assume that six more, equally heinous, killings may follow. Indeed when they start to doc just that, both detectives must hastily learn to work together - despite their contrasting approaches to police work - if they are to piece together the evidence. What makes matters worse for the pair, is that they begin to suspect that they are the metaphorical ball of wool for the killer's cat. They get closer and closer, but are always just that little bit late as this self-appointed weapon of god seems to be being wielded with every more horrific killing. David Fincher allows both actors here to develop this mystery compellingly, with a sparing but potent dialogue and an almost perfectly paced and scored progress as we all know what must come last - but never will we anticipate just how the coup de gras will be delivered. This is one of these superior crime dramas that leaves a little more to think about each time I watch it. Really good.",
+              "similarity_score": 0.27216318
+            },
+            "review_summary": "Se7en (Seven) Fincher pertama beneran bikin merinding, Freeman dan Pitt beradu akting, aksi pembunuhan kreatif tapi nihilisme bikin pusing, twist nggak jelas!"
+          },
+          {
+            "title": "Pulp Fiction",
+            "original_title": "Pulp Fiction",
+            "tmdb_id": 680,
+            "year": "1994",
+            "rating": 8.5,
+            "popularity": 18.1003,
+            "vote_count": 29329,
+            "genres": [
+              "Thriller",
+              "Crime",
+              "Comedy"
+            ],
+            "overview": "A burger-loving hit man, his philosophical partner, a drug-addled gangster's moll and a washed-up boxer converge in this sprawling, comedic crime caper. Their adventures unfurl in three stories that ingeniously trip back and forth in time.",
+            "score": 4.14,
+            "raw_payload": {
+              "tmdb_id": 680,
+              "title": "Pulp Fiction",
+              "original_title": "Pulp Fiction",
+              "overview": "A burger-loving hit man, his philosophical partner, a drug-addled gangster's moll and a washed-up boxer converge in this sprawling, comedic crime caper. Their adventures unfurl in three stories that ingeniously trip back and forth in time.",
+              "release_date": "1994-09-10",
+              "genre_ids": [
+                53,
+                80,
+                35
+              ],
+              "vote_average": 8.5,
+              "vote_count": 29329,
+              "popularity": 18.1003,
+              "trailer_url": "https://www.youtube.com/watch?v=tGpTpVyI_OQ",
+              "poster_url": "https://image.tmdb.org/t/p/w500/vQWk5YBFWF4bZaofAbv0tShwBvQ.jpg",
+              "raw_reviews": "***The cream of the crop of quirky crime thrillers***\r\n\r\nRELEASED IN 1994 and written & directed by Quentin Tarantino, \"Pulp Fiction\" is a drama/thriller/black comedy about two hit men in Los Angeles (John Travolta and Samuel L. Jackson), their mob boss & his wife (Ving Rhames and Uma Thurman) and a champion boxer who incurs the wrath of the boss (Bruce Willis).\r\n\r\nThe lurid, droll tale is told in a non-linear fashion, but it's easy to follow and the final act ties everything up nicely. The dialogue's witty and the story maintains your attention, despite its 2 hour and 34 minutes runtime. The film's stylish and pulsates with energy and innovation; it understandably influenced many 90's films and beyond.\r\n\r\nI put off seeing this iconic picture until almost twenty years after its release because the protagonists are all big city gangsters or somehow involved with 'em. These are lawless people who would kill a person without batting an eye. Their god is money or hedonism. Let ’em shoot each other to smithereens for all I care. But if you can look beyond this and the constant profanities, the film's worth your time. What redeems it for me, besides the all-around entertaining movie-making, is that it's a tale of redemption and the high price of stubborn folly: The wise person recognizes God’s grace and responds accordingly while the fool doesn’t and blithely goes on his (doomed) way. Once a person receives grace they naturally extend it to others. There are additional gems spiced throughout.\r\n\r\nBoth Travolta and Jackson shine here. There are several other celebrities on hand, like Harvey Keitel, with many in cameos, e.g. Christopher Walken; not to mention several formidable females, like curvy Julia Sweeney (Raquel), cutie Maria de Medeiros (Fabienne), Angela Jones (Esmarelda) and voluptuous Susan Griffiths (Marilyn Monroe).\r\n\r\nBOTTOM LINE: If you're in the mood for a quirky crime drama/thriller you can't go wrong with \"Pulp Fiction.\" It's top-of-the-line in every way, including the subtext.\r\n\r\nTHE FILM WAS SHOT in the Greater Los Angeles area. ADDITIONAL WRITER: Roger Avary.\r\n\r\nGRADE: A ||| Insane movie! \r\nOne of the bests(if not the best) Tarantino's movies! ||| Ving Rhames (\"Wallace\") is the kingpin who provides the loosest of templates for a couple of inter-twining tales that are amusing, bizarre and sometimes down right dangerous before we get a sort of alignment at the conclusion. \"Winnfield\" (Samuel L. Jackson) and \"Vincent Vega\" (John Travolta) are a pair of dapper enforcers, despatched to retrieve a stolen briefcase. Though their manner may be precise, the execution of their tasks are usually more hit and miss, definitely messy - and frequently requiring of the specialist clean-up services of \"Mr. Wolf\" (Harvey Keitel). \"Vega\" is also charged by his boss with looking after his cocaine-loving wife \"Mia\" (Uma Thurman) and that flirts with dancing and disaster too. Meantime, ageing boxer \"Butch\" (Bruce Willis) is supposed to help the boss by taking an early dive in a fight. Instead he manages to kill his opponent! Soon he is intent on fleeing town, well at least he tries before he and \"Wallace\" end up being the playthings of some interesting characters who keep their own leather-clad gimp locked in a box... It's really difficult to make sense of the narrative in writing. It flows really well, but at differing speeds and in several different directions at once. The stories are violent but delivered in an almost tongue-in cheek way. The dance between \"Mia\" and \"Vega\" has become the stuff of cinema legend; there is loads of chemistry - especially between Travolta and an on form Jackson who really does deliver his biblical verses with a puritanical - an lethal - zeal; Willis is as good here as he ever was and you cannot but feel sorry for poor old \"Pumpkin\" (Tim Roth) and his pal \"Honey Bunny\" (Amanda Plummer) whose habit of committing petty robberies when they realise that nobody ever thinks to hit a restaurant, all goes awry. The dialogue is cleverly targeted, with wit and pith but also used sparingly when the first rate soundtrack is allowed to let everyone come up for air. Tarantino himself features towards the end as just about everybody gets their just desserts. This is a classy and sharp piece of enigmatic and enjoyable cinema held together well by a creative and visionary director who appreciates how to get the best of a cast that know how to entertain! ||| Tarantino is the most overrated director of our times, all his films are silly but people say they are masterpieces, perhaps they are but not for the right way, the only good thing about Tarantino is that he isn't afraid of revenge for the sake of making his characters good. ||| really fun to watch and the attention to detail is great",
+              "similarity_score": 0.25312147
+            },
+            "review_summary": "Pulp Fiction, masterpiece Tarantino, ceritanya unik dan detailnya on point, wajib nonton meski ada yang bilang overrated!"
+          },
+          {
+            "title": "Michael Jackson's Thriller",
+            "original_title": "Michael Jackson's Thriller",
+            "tmdb_id": 92060,
+            "year": "1983",
+            "rating": 8.2,
+            "popularity": 4.5467,
+            "vote_count": 726,
+            "genres": [
+              "Horror",
+              "Thriller",
+              "Music"
+            ],
+            "overview": "A night at the movies turns terrifying when Michael and his date are attacked by zombies. Released at the height of Thriller’s success, the short film redefined the music video, broke racial barriers, and became the first inducted into the U.S. National Film Registry.",
+            "score": 4.13,
+            "raw_payload": {
+              "tmdb_id": 92060,
+              "title": "Michael Jackson's Thriller",
+              "original_title": "Michael Jackson's Thriller",
+              "overview": "A night at the movies turns terrifying when Michael and his date are attacked by zombies. Released at the height of Thriller’s success, the short film redefined the music video, broke racial barriers, and became the first inducted into the U.S. National Film Registry.",
+              "release_date": "1983-11-14",
+              "genre_ids": [
+                27,
+                53,
+                10402
+              ],
+              "vote_average": 8.2,
+              "vote_count": 726,
+              "popularity": 4.5467,
+              "trailer_url": "https://www.youtube.com/watch?v=2Ra1HqfC7ck",
+              "poster_url": "https://image.tmdb.org/t/p/w500/dYHGoPMkZMVuBA4EydmDQMo1EEv.jpg",
+              "raw_reviews": "",
+              "similarity_score": 0.27033934
+            },
+            "review_summary": "Belum ada review dari netizen"
+          }
+        ],
+        "genres": [
+          "Thriller",
+          "Action",
+          "Mystery",
+          "Drama"
+        ]
+      }
+    },
+    {
+      "role": "user",
+      "content": "yang lain?",
+      "timestamp": "2025-12-11T20:04:55.008906"
+    },
+    {
+      "role": "assistant",
+      "content": "**Analisis Mood:**\nMood terdeteksi: adventurous, hopeful\nIntensitas: 40%\n\nTampaknya Anda masih antusias mencari lebih banyak pilihan film kriminal, tetapi mungkin ingin rekomendasi yang lebih spesifik atau berbeda dari sebelumnya.\n\nBerdasarkan mood Anda, saya bisa merekomendasikan film dengan genre: Thriller, Action, Mystery, Drama. Apakah Anda ingin melihat rekomendasi film?",
+      "timestamp": "2025-12-11T20:04:58.401604",
+      "metadata": {
+        "type": "confirmation",
+        "genres": [
+          "Thriller",
+          "Action",
+          "Mystery",
+          "Drama"
+        ],
+        "mood_result": {
+          "detected_moods": [
+            "adventurous",
+            "hopeful"
+          ],
+          "intensity_score": 40,
+          "emotion_type": "positive",
+          "summary": "Tampaknya Anda masih antusias mencari lebih banyak pilihan film kriminal, tetapi mungkin ingin rekomendasi yang lebih spesifik atau berbeda dari sebelumnya.",
+          "recommended_genres": [
+            "Thriller",
+            "Action",
+            "Mystery",
+            "Drama"
+          ],
+          "user_input": "yang lain?"
+        }
+      }
+    },
+    {
+      "role": "user",
+      "content": "ya",
+      "timestamp": "2025-12-11T20:06:51.777645"
+    },
+    {
+      "role": "assistant",
+      "content": "Maaf, saya tidak menemukan film yang sesuai di database. Silakan coba dengan genre lain.",
+      "timestamp": "2025-12-11T20:07:10.036770"
+    }
+  ],
+  "metadata": {
+    "total_messages": 12,
+    "session_id": "2072174294176",
+    "last_updated": "2025-12-11T20:07:10.042902"
+  }
+}

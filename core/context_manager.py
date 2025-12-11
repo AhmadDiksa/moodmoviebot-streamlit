@@ -115,19 +115,30 @@ class ContextManager:
     @staticmethod
     def get_recommended_movie_ids() -> Set[int]:
         """
-        Get set of movie IDs that have been recommended
+        Get set of movie TMDB IDs that have been recommended
         
         Returns:
-            Set of movie IDs (tmdb_id or similar)
+            Set of TMDB IDs from Qdrant database
         """
         movie_ids = set()
         
         movies = ContextManager.get_recommended_movies_history()
         for movie in movies:
-            # Try different possible ID fields
-            movie_id = movie.get('id') or movie.get('tmdb_id') or movie.get('movie_id')
-            if movie_id:
-                movie_ids.add(int(movie_id))
+            # Use tmdb_id from database (primary identifier)
+            tmdb_id = None
+            
+            # First try to get from movie dict directly
+            if movie.get('tmdb_id'):
+                tmdb_id = movie.get('tmdb_id')
+            # Then try from raw_payload (from Qdrant)
+            elif movie.get('raw_payload') and isinstance(movie.get('raw_payload'), dict):
+                tmdb_id = movie.get('raw_payload', {}).get('tmdb_id')
+            
+            if tmdb_id:
+                try:
+                    movie_ids.add(int(tmdb_id))
+                except (ValueError, TypeError):
+                    logger.warning(f"Invalid tmdb_id: {tmdb_id} for movie {movie.get('title', 'Unknown')}")
         
         return movie_ids
     
@@ -136,20 +147,34 @@ class ContextManager:
         """
         Check if a movie should be excluded (already recommended)
         
+        Uses tmdb_id as primary identifier for matching (from Qdrant database).
+        Falls back to title matching if tmdb_id not available.
+        
         Args:
-            movie: Movie dictionary
+            movie: Movie dictionary from Qdrant
             
         Returns:
             True if movie should be excluded, False otherwise
         """
         recommended_ids = ContextManager.get_recommended_movie_ids()
         
-        # Check movie ID
-        movie_id = movie.get('id') or movie.get('tmdb_id') or movie.get('movie_id')
-        if movie_id and int(movie_id) in recommended_ids:
-            return True
+        # Primary check: Use tmdb_id from database
+        tmdb_id = None
+        if movie.get('tmdb_id'):
+            tmdb_id = movie.get('tmdb_id')
+        elif isinstance(movie, dict) and movie.get('raw_payload') and isinstance(movie.get('raw_payload'), dict):
+            # Try from raw_payload if not in main dict
+            tmdb_id = movie.get('raw_payload', {}).get('tmdb_id')
         
-        # Check by title (fuzzy match)
+        if tmdb_id:
+            try:
+                if int(tmdb_id) in recommended_ids:
+                    logger.debug(f"Movie with tmdb_id {tmdb_id} already recommended. Excluding.")
+                    return True
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid tmdb_id: {tmdb_id} for movie {movie.get('title', 'Unknown')}")
+        
+        # Fallback: Check by title (fuzzy match) if tmdb_id not available
         movie_title = movie.get('title', '').lower().strip()
         if not movie_title:
             return False
@@ -158,6 +183,7 @@ class ContextManager:
         for rec_movie in recommended_movies:
             rec_title = rec_movie.get('title', '').lower().strip()
             if rec_title and movie_title == rec_title:
+                logger.debug(f"Movie '{movie_title}' already recommended (title match). Excluding.")
                 return True
         
         return False
