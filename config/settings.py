@@ -12,7 +12,8 @@ import os
 class AppConfig:
     """Application configuration"""
     
-    # Model settings
+    # LLM Provider settings
+    LLM_PROVIDER: str = "gemini"  # Options: gemini, groq, openai
     MODEL_NAME: str = "gemini-flash-latest"
     TEMPERATURE: float = 0.3
     MAX_TOKENS: int = 2000
@@ -29,7 +30,13 @@ class AppConfig:
     COLLECTION_NAME: str = "moodviedb"
     
     # API Keys (loaded from secrets or env)
+    # Gemini
     GOOGLE_API_KEY: str = ""
+    # Groq
+    GROQ_API_KEY: str = ""
+    # OpenAI
+    OPENAI_API_KEY: str = ""
+    # Qdrant
     QDRANT_URL: str = ""
     QDRANT_API_KEY: str = ""
     
@@ -40,21 +47,50 @@ class AppConfig:
         
         # Try Streamlit secrets first
         try:
+            # LLM Provider
+            config.LLM_PROVIDER = st.secrets.get("LLM_PROVIDER", "gemini").lower()
+            config.MODEL_NAME = st.secrets.get("MODEL_NAME", config.MODEL_NAME)
+            config.TEMPERATURE = float(st.secrets.get("TEMPERATURE", config.TEMPERATURE))
+            config.MAX_TOKENS = int(st.secrets.get("MAX_TOKENS", config.MAX_TOKENS))
+            
+            # API Keys
             config.GOOGLE_API_KEY = st.secrets.get("GOOGLE_API_KEY", "")
+            config.GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", "")
+            config.OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "")
             config.QDRANT_URL = st.secrets.get("QDRANT_URL", "")
             config.QDRANT_API_KEY = st.secrets.get("QDRANT_API_KEY", "")
         except:
             # Fallback to environment variables
+            config.LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini").lower()
+            config.MODEL_NAME = os.getenv("MODEL_NAME", config.MODEL_NAME)
+            config.TEMPERATURE = float(os.getenv("TEMPERATURE", config.TEMPERATURE))
+            config.MAX_TOKENS = int(os.getenv("MAX_TOKENS", config.MAX_TOKENS))
+            
             config.GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
+            config.GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+            config.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
             config.QDRANT_URL = os.getenv("QDRANT_URL", "")
             config.QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "")
         
         return config
     
+    def get_llm_api_key(self) -> str:
+        """Get API key for current LLM provider"""
+        provider = self.LLM_PROVIDER.lower()
+        if provider == "gemini":
+            return self.GOOGLE_API_KEY
+        elif provider == "groq":
+            return self.GROQ_API_KEY
+        elif provider == "openai":
+            return self.OPENAI_API_KEY
+        else:
+            return ""
+    
     def is_valid(self) -> bool:
         """Check if all required keys are present"""
+        llm_key = self.get_llm_api_key()
         return bool(
-            self.GOOGLE_API_KEY and 
+            llm_key and 
             self.QDRANT_URL and 
             self.QDRANT_API_KEY
         )

@@ -8,6 +8,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 from collections import deque
 import logging
+from core.history_manager import HistoryManager
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,10 @@ class SessionManager:
         # Chat messages
         if 'messages' not in st.session_state:
             st.session_state.messages = []
+        
+        # Pending confirmation state
+        if 'pending_confirmation' not in st.session_state:
+            st.session_state.pending_confirmation = None
         
         # Current mood
         if 'current_mood' not in st.session_state:
@@ -48,23 +53,33 @@ class SessionManager:
         if 'session_started_at' not in st.session_state:
             st.session_state.session_started_at = datetime.now()
         
+        # History loaded flag
+        if 'history_loaded' not in st.session_state:
+            st.session_state.history_loaded = False
+        
         logger.info("Session state initialized")
     
     @staticmethod
-    def add_message(role: str, content: str):
+    def add_message(role: str, content: str, metadata: Optional[Dict[str, Any]] = None):
         """
         Add message to chat history
         
         Args:
             role: 'user' or 'assistant'
             content: Message content
+            metadata: Optional metadata dictionary
         """
         logger.debug(f"Adding {role} message (length: {len(content)} chars)")
-        st.session_state.messages.append({
+        message = {
             'role': role,
             'content': content,
             'timestamp': datetime.now().isoformat()
-        })
+        }
+        
+        if metadata:
+            message['metadata'] = metadata
+        
+        st.session_state.messages.append(message)
         
         # Limit history size
         max_messages = 50
@@ -72,6 +87,18 @@ class SessionManager:
             removed = len(st.session_state.messages) - max_messages
             st.session_state.messages = st.session_state.messages[-max_messages:]
             logger.debug(f"Message history trimmed - removed {removed} old messages")
+        
+        # Auto-save to file
+        try:
+            HistoryManager.save_history(
+                st.session_state.messages,
+                metadata={
+                    "total_messages": len(st.session_state.messages),
+                    "session_id": str(id(st.session_state))
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Failed to auto-save history: {e}")
         
         logger.debug(f"Total messages in history: {len(st.session_state.messages)}")
     
@@ -128,6 +155,14 @@ class SessionManager:
         """Clear chat history"""
         st.session_state.messages = []
         st.session_state.conversation_count = 0
+        st.session_state.pending_confirmation = None
+        
+        # Clear history file
+        try:
+            HistoryManager.clear_history()
+        except Exception as e:
+            logger.warning(f"Failed to clear history file: {e}")
+        
         logger.info("Chat history cleared")
     
     @staticmethod
@@ -137,7 +172,89 @@ class SessionManager:
         st.session_state.recommendations = []
         st.session_state.preferred_genres = []
         st.session_state.disliked_genres = []
+        st.session_state.pending_confirmation = None
         logger.info("User profile reset")
+    
+    @staticmethod
+    def load_from_file() -> bool:
+        """
+        Load chat history from file
+        
+        Returns:
+            True if loaded successfully, False otherwise
+        """
+        if st.session_state.get('history_loaded', False):
+            logger.debug("History already loaded, skipping")
+            return True
+        
+        try:
+            history_data = HistoryManager.load_history()
+            
+            if history_data is None:
+                logger.debug("No history file found, starting fresh")
+                st.session_state.history_loaded = True
+                return True
+            
+            messages = history_data.get("messages", [])
+            
+            if messages:
+                st.session_state.messages = messages
+                logger.info(f"Loaded {len(messages)} messages from history file")
+            
+            st.session_state.history_loaded = True
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to load history from file: {e}")
+            st.session_state.history_loaded = True  # Mark as loaded to prevent retry loops
+            return False
+    
+    @staticmethod
+    def save_to_file() -> bool:
+        """
+        Save chat history to file
+        
+        Returns:
+            True if saved successfully, False otherwise
+        """
+        try:
+            return HistoryManager.save_history(
+                st.session_state.messages,
+                metadata={
+                    "total_messages": len(st.session_state.messages),
+                    "session_id": str(id(st.session_state))
+                }
+            )
+        except Exception as e:
+            logger.error(f"Failed to save history to file: {e}")
+            return False
+    
+    @staticmethod
+    def set_pending_confirmation(confirmation_data: Dict[str, Any]):
+        """
+        Set pending confirmation data
+        
+        Args:
+            confirmation_data: Dictionary with confirmation info (genres, mood, etc.)
+        """
+        st.session_state.pending_confirmation = confirmation_data
+        logger.debug(f"Pending confirmation set: {confirmation_data}")
+    
+    @staticmethod
+    def clear_pending_confirmation():
+        """Clear pending confirmation"""
+        st.session_state.pending_confirmation = None
+        logger.debug("Pending confirmation cleared")
+    
+    @staticmethod
+    def get_pending_confirmation() -> Optional[Dict[str, Any]]:
+        """
+        Get pending confirmation data
+        
+        Returns:
+            Confirmation data dictionary or None
+        """
+        return st.session_state.get('pending_confirmation')
     
     @staticmethod
     def get_context_summary() -> str:

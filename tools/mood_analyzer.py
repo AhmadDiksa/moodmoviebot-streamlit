@@ -98,16 +98,29 @@ class MoodAnalyzer:
         context_section = ""
         
         if conversation_history and len(conversation_history) > 0:
-            # Build context from conversation history
+            # Build context from conversation history using ContextManager approach
             context_lines = []
             context_lines.append("\nKonteks percakapan sebelumnya:")
-            for msg in conversation_history[-5:]:  # Last 5 messages for context
+            context_lines.append("=" * 50)
+            
+            # Use last 5-10 messages for context
+            for msg in conversation_history[-10:]:
                 role = msg.get("role", "").lower()
                 content = msg.get("content", "")
+                
                 if role == "user":
-                    context_lines.append(f"User: {content[:200]}")  # Limit length
+                    # Limit user message length
+                    context_lines.append(f"User: {content[:300]}")
                 elif role == "assistant":
-                    context_lines.append(f"Assistant: {content[:200]}")
+                    # Extract text content (exclude movie recommendations)
+                    text_content = content
+                    if "**Mood Analysis:**" in text_content:
+                        # Extract only mood analysis part
+                        parts = text_content.split("**Recommendations:**")
+                        text_content = parts[0].strip()
+                    context_lines.append(f"Assistant: {text_content[:300]}")
+            
+            context_lines.append("=" * 50)
             context_section = "\n".join(context_lines)
             context_section += "\n\nGunakan konteks percakapan sebelumnya untuk memahami follow-up question atau perubahan mood pengguna."
         
@@ -136,16 +149,78 @@ PENTING: Kembalikan HANYA JSON tanpa markdown atau text tambahan!"""
     
     def _parse_response(self, response: str) -> Dict[str, Any]:
         """Parse LLM response to dictionary"""
+        import re
         logger.debug(f"Parsing response (length: {len(response)} chars)")
         logger.debug(f"Raw response: {response[:200]}...")
         
         try:
-            # Clean markdown if present
+            # Step 1: Remove markdown code blocks if present
             cleaned = response.replace("```json", "").replace("```", "").strip()
-            logger.debug(f"Cleaned response: {cleaned[:200]}...")
             
-            # Parse JSON
-            result = json.loads(cleaned)
+            # Step 2: Remove reasoning/thinking tags (various formats)
+            # Handle formats like <think>, <reasoning>, <think>, etc.
+            reasoning_patterns = [
+                r'<think>.*?</think>',
+                r'<reasoning>.*?</reasoning>',
+                r'<think>.*?</think>',
+                r'<thought>.*?</thought>',
+                r'<analysis>.*?</analysis>',
+            ]
+            for pattern in reasoning_patterns:
+                cleaned = re.sub(pattern, '', cleaned, flags=re.DOTALL | re.IGNORECASE)
+            
+            # Step 3: Try to extract JSON object from response
+            # Find the first { and then find matching }
+            json_str = None
+            first_brace = cleaned.find('{')
+            
+            if first_brace != -1:
+                # Start from first brace and find matching closing brace
+                brace_count = 0
+                start_pos = first_brace
+                
+                for i in range(start_pos, len(cleaned)):
+                    if cleaned[i] == '{':
+                        brace_count += 1
+                    elif cleaned[i] == '}':
+                        brace_count -= 1
+                        if brace_count == 0:
+                            # Found matching closing brace
+                            json_str = cleaned[start_pos:i+1]
+                            break
+                
+                if json_str:
+                    logger.debug(f"Extracted JSON from response (length: {len(json_str)} chars)")
+                else:
+                    logger.debug("Could not find matching closing brace, trying alternative method")
+                    # Fallback: try to find JSON after reasoning tags
+                    json_str = cleaned[first_brace:]
+                    # Try to find the end by looking for the last }
+                    last_brace = json_str.rfind('}')
+                    if last_brace != -1:
+                        json_str = json_str[:last_brace+1]
+            else:
+                # If no { found, try parsing the whole cleaned response
+                json_str = cleaned
+                logger.debug("No opening brace found, trying to parse entire response")
+            
+            # Step 4: Clean up the JSON string
+            if json_str:
+                json_str = json_str.strip()
+                # Ensure it starts with { and ends with }
+                if not json_str.startswith('{'):
+                    first_brace = json_str.find('{')
+                    if first_brace != -1:
+                        json_str = json_str[first_brace:]
+                if not json_str.endswith('}'):
+                    last_brace = json_str.rfind('}')
+                    if last_brace != -1:
+                        json_str = json_str[:last_brace+1]
+            
+            logger.debug(f"Cleaned JSON string: {json_str[:200]}...")
+            
+            # Step 5: Parse JSON
+            result = json.loads(json_str)
             logger.debug(f"JSON parsed successfully: {list(result.keys())}")
             
             # Validate required fields
@@ -174,8 +249,37 @@ PENTING: Kembalikan HANYA JSON tanpa markdown atau text tambahan!"""
             
         except json.JSONDecodeError as e:
             logger.error(f"JSON parsing failed: {e}")
-            logger.error(f"Response that failed: {response}")
+            logger.error(f"Response that failed: {response[:500]}...")
             logger.error(f"Error position: {e.pos if hasattr(e, 'pos') else 'unknown'}")
+            
+            # Try one more time with a more aggressive extraction
+            try:
+                logger.debug("Attempting aggressive JSON extraction...")
+                # Find the last occurrence of { that might be the start of JSON
+                last_brace = response.rfind('{')
+                if last_brace != -1:
+                    potential_json = response[last_brace:]
+                    # Find matching closing brace
+                    brace_count = 0
+                    end_pos = -1
+                    for i, char in enumerate(potential_json):
+                        if char == '{':
+                            brace_count += 1
+                        elif char == '}':
+                            brace_count -= 1
+                            if brace_count == 0:
+                                end_pos = i + 1
+                                break
+                    
+                    if end_pos != -1:
+                        json_str = potential_json[:end_pos]
+                        logger.debug(f"Extracted JSON using aggressive method: {json_str[:200]}...")
+                        result = json.loads(json_str)
+                        logger.info("Successfully parsed JSON using aggressive extraction")
+                        return result
+            except Exception as e2:
+                logger.error(f"Aggressive extraction also failed: {e2}")
+            
             raise
         except Exception as e:
             logger.error(f"Response validation failed: {e}")
@@ -186,8 +290,19 @@ PENTING: Kembalikan HANYA JSON tanpa markdown atau text tambahan!"""
         """Fallback analysis using simple pattern matching"""
         text_lower = text.lower()
         
-        # Pattern matching for common moods
-        if any(word in text_lower for word in ["sakit", "pusing", "demam", "flu"]):
+        # Pattern matching for common moods - check most specific first
+        
+        # Death/grief patterns (highest priority for intensity)
+        if any(word in text_lower for word in ["meninggal", "wafat", "berpulang", "tiada", "pergi", "hilang", "kehilangan", "kematian", "mati"]):
+            return {
+                "detected_moods": ["sedih", "sakit"],
+                "intensity_score": 95,
+                "emotion_type": "negative",
+                "summary": "Saya turut berduka cita. Semoga Anda dan keluarga diberi kekuatan di masa sulit ini.",
+                "recommended_genres": ["Drama", "Family", "Animation", "Fantasy"]
+            }
+        # Sickness patterns
+        elif any(word in text_lower for word in ["sakit", "pusing", "demam", "flu", "batuk", "pilek"]):
             return {
                 "detected_moods": ["sakit", "lelah"],
                 "intensity_score": 70,
@@ -195,7 +310,8 @@ PENTING: Kembalikan HANYA JSON tanpa markdown atau text tambahan!"""
                 "summary": "Semoga lekas sembuh ya! Istirahat yang cukup dan jaga kesehatan.",
                 "recommended_genres": ["Comedy", "Animation", "Family"]
             }
-        elif any(word in text_lower for word in ["capek", "lelah", "tired"]):
+        # Tiredness patterns
+        elif any(word in text_lower for word in ["capek", "lelah", "tired", "penat", "letih"]):
             return {
                 "detected_moods": ["lelah"],
                 "intensity_score": 65,
@@ -203,22 +319,52 @@ PENTING: Kembalikan HANYA JSON tanpa markdown atau text tambahan!"""
                 "summary": "Sepertinya butuh istirahat nih. Yuk santai dengan film ringan!",
                 "recommended_genres": ["Comedy", "Family", "Animation"]
             }
-        elif any(word in text_lower for word in ["senang", "happy", "gembira"]):
+        # Sadness patterns (broader)
+        elif any(word in text_lower for word in ["sedih", "sad", "galau", "murung", "terpuruk", "down", "depresi", "putus asa"]):
             return {
-                "detected_moods": ["senang"],
+                "detected_moods": ["sedih"],
+                "intensity_score": 75,
+                "emotion_type": "negative",
+                "summary": "Ada yang mengganjal ya? Film yang tepat bisa bantu memperbaiki mood.",
+                "recommended_genres": ["Comedy", "Animation", "Drama", "Family"]
+            }
+        # Happiness patterns
+        elif any(word in text_lower for word in ["senang", "happy", "gembira", "bahagia", "joy", "excited", "semangat"]):
+            return {
+                "detected_moods": ["senang", "excited"],
                 "intensity_score": 80,
                 "emotion_type": "positive",
                 "summary": "Senang banget! Mood bagus nih, cocok nonton film seru!",
-                "recommended_genres": ["Adventure", "Comedy", "Action"]
+                "recommended_genres": ["Adventure", "Comedy", "Action", "Animation"]
             }
-        elif any(word in text_lower for word in ["sedih", "sad", "galau"]):
+        # Anger/frustration patterns
+        elif any(word in text_lower for word in ["marah", "kesal", "frustrasi", "jengkel", "geram", "angry", "mad"]):
             return {
-                "detected_moods": ["sedih"],
-                "intensity_score": 60,
+                "detected_moods": ["marah", "frustrasi"],
+                "intensity_score": 70,
                 "emotion_type": "negative",
-                "summary": "Ada yang mengganjal ya? Film yang tepat bisa bantu memperbaiki mood.",
-                "recommended_genres": ["Comedy", "Animation", "Drama"]
+                "summary": "Tenang dulu ya. Film yang menghibur bisa bantu meredakan emosi.",
+                "recommended_genres": ["Comedy", "Action", "Adventure"]
             }
+        # Anxiety/worry patterns
+        elif any(word in text_lower for word in ["cemas", "khawatir", "anxiety", "worried", "takut", "nervous"]):
+            return {
+                "detected_moods": ["cemas"],
+                "intensity_score": 65,
+                "emotion_type": "negative",
+                "summary": "Jangan terlalu khawatir. Film yang menenangkan bisa membantu.",
+                "recommended_genres": ["Drama", "Family", "Animation", "Fantasy"]
+            }
+        # Boredom patterns
+        elif any(word in text_lower for word in ["bosan", "boring", "monoton", "jenuh"]):
+            return {
+                "detected_moods": ["bosan"],
+                "intensity_score": 55,
+                "emotion_type": "neutral",
+                "summary": "Wah, butuh sesuatu yang seru nih! Yuk cari film yang menarik!",
+                "recommended_genres": ["Action", "Adventure", "Thriller", "Comedy"]
+            }
+        # Default/neutral
         else:
             return {
                 "detected_moods": ["netral"],

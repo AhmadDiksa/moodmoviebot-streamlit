@@ -179,23 +179,72 @@ PENTING: Tulis HANYA satu kalimat tanpa kutip atau markdown!"""
             response = self.llm_manager.invoke(prompt)
             logger.debug(f"LLM response received (length: {len(response)} chars)")
             
-            # Clean response
+            # Clean response - extract only the actual summary text
             summary = response.strip()
             original_summary = summary
-            summary = re.sub(r'^["\']+|[,"\']+$', '', summary)  # Remove quotes
-            summary = summary.replace("```", "").strip()  # Remove markdown
+            
+            # Remove reasoning/thinking tags if present
+            reasoning_patterns = [
+                r'<think>.*?</think>',
+                r'<reasoning>.*?</reasoning>',
+                r'<think>.*?</think>',
+                r'<thought>.*?</thought>',
+            ]
+            for pattern in reasoning_patterns:
+                summary = re.sub(pattern, '', summary, flags=re.DOTALL | re.IGNORECASE)
+            
+            # Remove markdown code blocks
+            summary = summary.replace("```", "").strip()
+            
+            # Remove quotes
+            summary = re.sub(r'^["\']+|[,"\']+$', '', summary)
+            
+            # If response is too long, try to extract just the first sentence or first 150 chars
+            if len(summary) > 200:
+                logger.debug(f"Summary too long ({len(summary)} chars), extracting first sentence...")
+                # Try to find first sentence (ending with . ! or ?)
+                sentence_match = re.search(r'^[^.!?]+[.!?]', summary)
+                if sentence_match:
+                    summary = sentence_match.group(0).strip()
+                    logger.debug(f"Extracted first sentence: {summary[:100]}...")
+                else:
+                    # If no sentence ending found, try to find first line break or take first 150 chars
+                    first_line = summary.split('\n')[0].strip()
+                    if len(first_line) > 0 and len(first_line) <= 200:
+                        summary = first_line
+                        logger.debug(f"Took first line: {summary[:100]}...")
+                    else:
+                        # If still too long, take first 150 chars
+                        summary = summary[:150].strip()
+                        logger.debug(f"Took first 150 chars: {summary[:100]}...")
             
             if summary != original_summary:
-                logger.debug(f"Cleaned summary (removed quotes/markdown)")
+                logger.debug(f"Cleaned summary (removed quotes/markdown/reasoning)")
             
-            # Validate length
-            if summary and len(summary) < 200:
+            # Final cleanup: remove any remaining reasoning keywords at the start
+            reasoning_keywords = ['okay', 'let', 'tackle', 'user', 'wants', 'reviews', 'combine']
+            first_words = summary.lower().split()[:3]
+            if any(keyword in first_words for keyword in reasoning_keywords):
+                # Try to find actual summary after reasoning text
+                # Look for sentence that doesn't start with reasoning keywords
+                sentences = re.split(r'[.!?]+', summary)
+                for sentence in sentences:
+                    sentence = sentence.strip()
+                    if sentence and len(sentence) > 20:
+                        first_words_sent = sentence.lower().split()[:3]
+                        if not any(keyword in first_words_sent for keyword in reasoning_keywords):
+                            summary = sentence
+                            logger.debug(f"Extracted actual summary after reasoning: {summary[:100]}...")
+                            break
+            
+            # Validate length - be more lenient (up to 200 chars is OK)
+            if summary and len(summary) <= 200 and len(summary) > 10:
                 duration = time.time() - start_time
-                logger.debug(f"Summary generated successfully in {duration:.2f}s")
+                logger.debug(f"Summary generated successfully in {duration:.2f}s (length: {len(summary)} chars)")
                 return summary
             else:
-                logger.warning(f"Summary too long ({len(summary)} chars), using fallback")
-                return "Netizen bilang filmnya keren banget!"
+                logger.warning(f"Summary still invalid (length: {len(summary) if summary else 0} chars), using fallback")
+                return self._fallback_summary(reviews)
                 
         except Exception as e:
             duration = time.time() - start_time

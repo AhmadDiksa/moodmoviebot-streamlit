@@ -9,7 +9,9 @@ import streamlit as st
 import logging
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
+from typing import List, Dict, Any
 import os
+import hashlib
 
 # Create logs directory if it doesn't exist
 os.makedirs('logs', exist_ok=True)
@@ -68,6 +70,16 @@ from ui.components import (
     display_export_button,
     display_cache_stats
 )
+from ui.chat_components import (
+    render_chat_message,
+    render_movie_recommendation,
+    render_confirmation_prompt,
+    render_mood_analysis_inline,
+    render_welcome_message,
+    parse_confirmation_response
+)
+from core.history_manager import HistoryManager
+from core.context_manager import ContextManager
 
 # ====================== PAGE CONFIG ======================
 st.set_page_config(
@@ -97,6 +109,175 @@ st.set_page_config(
 # Apply custom CSS
 st.markdown(get_custom_css(), unsafe_allow_html=True)
 
+# ====================== SETUP POPUP ======================
+
+def show_setup_popup():
+    """Display popup for API key and model configuration"""
+    
+    # Model options for each provider
+    MODEL_OPTIONS = {
+        "gemini": [
+            "gemini-2.0-flash-exp",
+            "gemini-1.5-pro",
+            "gemini-1.5-flash",
+            "gemini-pro",
+            "gemini-flash-latest"
+        ],
+        "groq": [
+            "qwen/qwen3-32b",
+            "llama-3.1-70b-versatile",
+            "llama-3.1-8b-instant",
+            "mixtral-8x7b-32768",
+            "gemma2-9b-it"
+        ],
+        "openai": [
+            "gpt-4o",
+            "gpt-4-turbo",
+            "gpt-4",
+            "gpt-3.5-turbo",
+            "o1-preview"
+        ]
+    }
+    
+    # Initialize session state for setup
+    if 'setup_completed' not in st.session_state:
+        st.session_state.setup_completed = False
+    if 'setup_provider' not in st.session_state:
+        st.session_state.setup_provider = "groq"
+    if 'setup_model' not in st.session_state:
+        st.session_state.setup_model = MODEL_OPTIONS["groq"][0]
+    if 'setup_llm_api_key' not in st.session_state:
+        st.session_state.setup_llm_api_key = ""
+    if 'setup_qdrant_url' not in st.session_state:
+        st.session_state.setup_qdrant_url = ""
+    if 'setup_qdrant_key' not in st.session_state:
+        st.session_state.setup_qdrant_key = ""
+    
+    # Center the content
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Main setup form in a centered container
+    with st.container():
+        # Add custom styling for the setup form
+        st.markdown("""
+        <style>
+        .setup-container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: rgba(30, 30, 30, 0.9);
+            border-radius: 15px;
+            border: 2px solid #E50914;
+            box-shadow: 0 10px 40px rgba(229, 9, 20, 0.3);
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Title
+        st.markdown("## 🔑 Setup Required")
+        st.markdown("Please configure your API keys to get started with MoodMovieBot!")
+        st.markdown("---")
+        
+        # Provider selection
+        provider = st.selectbox(
+            "**LLM Provider**",
+            options=["groq", "gemini", "openai"],
+            index=["groq", "gemini", "openai"].index(st.session_state.setup_provider) if st.session_state.setup_provider in ["groq", "gemini", "openai"] else 0,
+            help="Choose your preferred LLM provider"
+        )
+        st.session_state.setup_provider = provider
+        
+        # Model selection based on provider
+        available_models = MODEL_OPTIONS.get(provider, MODEL_OPTIONS["groq"])
+        current_model = st.session_state.setup_model if st.session_state.setup_model in available_models else available_models[0]
+        model = st.selectbox(
+            "**Model**",
+            options=available_models,
+            index=available_models.index(current_model) if current_model in available_models else 0,
+            help=f"Select model for {provider}"
+        )
+        st.session_state.setup_model = model
+        
+        # API Key input
+        api_key_label = {
+            "gemini": "Google API Key",
+            "groq": "Groq API Key",
+            "openai": "OpenAI API Key"
+        }.get(provider, "API Key")
+        
+        llm_api_key = st.text_input(
+            f"**{api_key_label}**",
+            value=st.session_state.setup_llm_api_key,
+            type="password",
+            help=f"Get your {api_key_label} from the provider's website"
+        )
+        st.session_state.setup_llm_api_key = llm_api_key
+        
+        # Qdrant configuration
+        st.markdown("---")
+        st.markdown("### 🗄️ Qdrant Configuration")
+        qdrant_url = st.text_input(
+            "**Qdrant URL**",
+            value=st.session_state.setup_qdrant_url,
+            help="Your Qdrant cluster URL (e.g., https://xxx.qdrant.io)"
+        )
+        st.session_state.setup_qdrant_url = qdrant_url
+        
+        qdrant_key = st.text_input(
+            "**Qdrant API Key**",
+            value=st.session_state.setup_qdrant_key,
+            type="password",
+            help="Your Qdrant API key"
+        )
+        st.session_state.setup_qdrant_key = qdrant_key
+        
+        # Help links
+        with st.expander("📚 Need help getting API keys?"):
+            st.markdown(f"""
+            **Get API Keys:**
+            - **Gemini**: [Google AI Studio](https://makersuite.google.com/app/apikey)
+            - **Groq**: [Groq Console](https://console.groq.com/)
+            - **OpenAI**: [OpenAI Platform](https://platform.openai.com/api-keys)
+            - **Qdrant**: [Qdrant Cloud](https://cloud.qdrant.io/)
+            """)
+        
+        # Save button
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("✅ Save & Continue", type="primary", use_container_width=True):
+                # Validate inputs
+                if not llm_api_key:
+                    st.error(f"⚠️ Please enter your {api_key_label}")
+                elif not qdrant_url:
+                    st.error("⚠️ Please enter your Qdrant URL")
+                elif not qdrant_key:
+                    st.error("⚠️ Please enter your Qdrant API Key")
+                else:
+                    # Save to session state
+                    st.session_state.setup_completed = True
+                    st.session_state.config_provider = provider
+                    st.session_state.config_model = model
+                    st.session_state.config_llm_api_key = llm_api_key
+                    st.session_state.config_qdrant_url = qdrant_url
+                    st.session_state.config_qdrant_key = qdrant_key
+                    logger.info(f"Setup completed - Provider: {provider}, Model: {model}")
+                    st.success("✅ Configuration saved! Loading application...")
+                    st.rerun()
+        
+        with col2:
+            if st.button("ℹ️ Use Secrets File", use_container_width=True):
+                st.info("""
+                **For Streamlit Cloud:**
+                1. Go to Settings → Secrets
+                2. Add your keys to `.streamlit/secrets.toml`
+                
+                **For Local Development:**
+                1. Create `.streamlit/secrets.toml` file
+                2. Add your configuration
+                """)
+    
+    return not st.session_state.setup_completed
+
 # ====================== INITIALIZATION ======================
 
 def initialize_app():
@@ -108,40 +289,66 @@ def initialize_app():
     SessionManager.initialize()
     logger.debug("Session state initialized")
     
-    # Load configuration
-    logger.debug("Loading configuration from secrets...")
-    config = AppConfig.load_from_secrets()
-    logger.debug(f"Configuration loaded - Model: {config.MODEL_NAME}, Collection: {config.COLLECTION_NAME}")
+    # Load history from file
+    logger.debug("Loading chat history from file...")
+    SessionManager.load_from_file()
+    logger.debug("History loading completed")
+    
+    # Load configuration - check session state first, then secrets
+    logger.debug("Loading configuration...")
+    
+    # Check if setup is completed in session state
+    if st.session_state.get('setup_completed', False):
+        logger.debug("Loading configuration from session state...")
+        config = AppConfig()
+        provider = st.session_state.get('config_provider', 'groq')
+        api_key = st.session_state.get('config_llm_api_key', '')
+        
+        config.LLM_PROVIDER = provider
+        config.MODEL_NAME = st.session_state.get('config_model', 'qwen/qwen3-32b')
+        
+        # Set API key based on provider
+        if provider == 'gemini':
+            config.GOOGLE_API_KEY = api_key
+        elif provider == 'groq':
+            config.GROQ_API_KEY = api_key
+        elif provider == 'openai':
+            config.OPENAI_API_KEY = api_key
+        
+        config.QDRANT_URL = st.session_state.get('config_qdrant_url', '')
+        config.QDRANT_API_KEY = st.session_state.get('config_qdrant_key', '')
+        logger.debug(f"Configuration loaded from session - Provider: {config.LLM_PROVIDER}, Model: {config.MODEL_NAME}")
+    else:
+        # Try loading from secrets
+        logger.debug("Loading configuration from secrets...")
+        config = AppConfig.load_from_secrets()
+        logger.debug(f"Configuration loaded from secrets - Provider: {config.LLM_PROVIDER}, Model: {config.MODEL_NAME}")
     
     # Check if config is valid
     if not config.is_valid():
-        logger.error("Configuration validation failed - API keys missing!")
-        st.error("⚠️ API keys are missing!")
-        
-        with st.sidebar:
-            st.markdown("### 🔑 Setup Required")
-            st.markdown("""
-            Please add your API keys:
+        logger.warning("Configuration validation failed - API keys missing!")
+        # Show setup popup
+        if show_setup_popup():
+            st.stop()
+        else:
+            # Reload config from session state after setup
+            config = AppConfig()
+            provider = st.session_state.get('config_provider', 'groq')
+            api_key = st.session_state.get('config_llm_api_key', '')
             
-            **For Streamlit Cloud:**
-            1. Go to Settings → Secrets
-            2. Add:
-            ```toml
-            GOOGLE_API_KEY = "your_key"
-            QDRANT_URL = "your_url"
-            QDRANT_API_KEY = "your_key"
-            ```
+            config.LLM_PROVIDER = provider
+            config.MODEL_NAME = st.session_state.get('config_model', 'qwen/qwen3-32b')
             
-            **For Local Development:**
-            1. Create `.env` file
-            2. Add same keys
+            # Set API key based on provider
+            if provider == 'gemini':
+                config.GOOGLE_API_KEY = api_key
+            elif provider == 'groq':
+                config.GROQ_API_KEY = api_key
+            elif provider == 'openai':
+                config.OPENAI_API_KEY = api_key
             
-            **Get API Keys:**
-            - [Gemini API](https://makersuite.google.com/app/apikey)
-            - [Qdrant Cloud](https://cloud.qdrant.io/)
-            """)
-        
-        st.stop()
+            config.QDRANT_URL = st.session_state.get('config_qdrant_url', '')
+            config.QDRANT_API_KEY = st.session_state.get('config_qdrant_key', '')
     
     return config
 
@@ -221,47 +428,48 @@ def main():
     
     # ====================== MAIN CONTENT ======================
     
-    st.markdown("---")
+    # Full-width chat interface
+    # Display welcome message if no messages
+    if len(st.session_state.messages) == 0:
+        render_welcome_message()
     
-    # Quick actions
-    logger.debug("Checking quick actions...")
-    quick_action_result = display_quick_actions()
-    if quick_action_result:
-        logger.info(f"Quick action triggered: {quick_action_result[:50]}...")
-        # User clicked a quick action button
-        handle_user_input(
-            quick_action_result, 
-            mood_analyzer, 
-            movie_searcher,
-            review_summarizer
-        )
-        st.rerun()
-    
-    # Display chat history
+    # Display chat history using chat components
     logger.debug(f"Displaying chat history - {len(st.session_state.messages)} messages")
     for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+        render_chat_message(message, show_timestamp=False)
     
-    # Display movie recommendations if available (persist cards after processing)
-    if st.session_state.get('recommendations') and len(st.session_state.recommendations) > 0:
-        logger.debug(f"Displaying {len(st.session_state.recommendations)} persisted movie recommendations")
-        st.markdown("---")
-        st.markdown("### 🎬 Recommended Movies")
+    # Handle confirmation response from buttons
+    if 'confirmation_response' in st.session_state:
+        response = st.session_state.confirmation_response
+        del st.session_state.confirmation_response
         
-        for idx, movie in enumerate(st.session_state.recommendations, 1):
-            logger.debug(f"Displaying persisted movie {idx}/{len(st.session_state.recommendations)}: {movie.get('title', 'Unknown')}")
-            # Display movie card
-            display_movie_card(movie, idx)
-            
-            # Display review if available
-            if movie.get('review_summary'):
-                st.markdown(f"**💬 Netizen:** {movie.get('review_summary')}")
-            
-            st.markdown("---")
+        if response == "yes":
+            # User approved, proceed with movie search
+            pending = SessionManager.get_pending_confirmation()
+            if pending:
+                logger.info("User approved recommendation, proceeding with movie search")
+                handle_movie_search(
+                    pending.get('genres', []),
+                    pending.get('mood_result', {}),
+                    mood_analyzer,
+                    movie_searcher,
+                    review_summarizer
+                )
+                SessionManager.clear_pending_confirmation()
+                st.rerun()
+        elif response == "no":
+            # User rejected
+            SessionManager.add_message("assistant", "Baik, tidak masalah. Jika Anda ingin melihat rekomendasi film nanti, silakan beri tahu saya!")
+            SessionManager.clear_pending_confirmation()
+            st.rerun()
+        elif response == "change":
+            # User wants to change
+            SessionManager.add_message("assistant", "Baik, genre apa yang ingin Anda tonton? Silakan sebutkan genre atau mood yang Anda inginkan.")
+            SessionManager.clear_pending_confirmation()
+            st.rerun()
     
     # Chat input
-    if prompt := st.chat_input("Tell me how you're feeling today..."):
+    if prompt := st.chat_input("Ceritakan bagaimana perasaan Anda hari ini..."):
         logger.info(f"User input received: {prompt[:100]}...")
         handle_user_input(prompt, mood_analyzer, movie_searcher, review_summarizer)
 
@@ -272,7 +480,7 @@ def handle_user_input(
     review_summarizer: ReviewSummarizer
 ):
     """
-    Handle user input and generate response
+    Handle user input and generate response with confirmation flow
     
     Args:
         user_input: User's message
@@ -283,6 +491,64 @@ def handle_user_input(
     import time
     start_time = time.time()
     logger.info(f"=== Processing user input (length: {len(user_input)}) ===")
+    
+    # Check if user is responding to confirmation
+    pending_confirmation = SessionManager.get_pending_confirmation()
+    if pending_confirmation:
+        # User is responding to confirmation prompt
+        logger.info("User responding to confirmation prompt")
+        confirmation_response = parse_confirmation_response(user_input)
+        
+        if confirmation_response == "yes":
+            # User approved, proceed with movie search
+            logger.info("User approved recommendation, proceeding with movie search")
+            SessionManager.add_message("user", user_input)
+            SessionManager.increment_conversation()
+            
+            with st.chat_message("user"):
+                st.markdown(user_input)
+            
+            with st.chat_message("assistant"):
+                handle_movie_search(
+                    pending_confirmation.get('genres', []),
+                    pending_confirmation.get('mood_result', {}),
+                    mood_analyzer,
+                    movie_searcher,
+                    review_summarizer
+                )
+            
+            SessionManager.clear_pending_confirmation()
+            return
+        
+        elif confirmation_response == "no":
+            # User rejected
+            SessionManager.add_message("user", user_input)
+            SessionManager.increment_conversation()
+            
+            with st.chat_message("user"):
+                st.markdown(user_input)
+            
+            with st.chat_message("assistant"):
+                st.markdown("Baik, tidak masalah. Jika Anda ingin melihat rekomendasi film nanti, silakan beri tahu saya!")
+                SessionManager.add_message("assistant", "Baik, tidak masalah. Jika Anda ingin melihat rekomendasi film nanti, silakan beri tahu saya!")
+            
+            SessionManager.clear_pending_confirmation()
+            return
+        
+        elif confirmation_response == "change":
+            # User wants to change genre
+            SessionManager.add_message("user", user_input)
+            SessionManager.increment_conversation()
+            
+            with st.chat_message("user"):
+                st.markdown(user_input)
+            
+            with st.chat_message("assistant"):
+                st.markdown("Baik, saya akan menganalisis ulang berdasarkan permintaan Anda.")
+                SessionManager.add_message("assistant", "Baik, saya akan menganalisis ulang berdasarkan permintaan Anda.")
+            
+            SessionManager.clear_pending_confirmation()
+            # Continue with normal flow to re-analyze
     
     # Add user message
     logger.debug("Adding user message to session...")
@@ -296,14 +562,14 @@ def handle_user_input(
     
     # Generate assistant response
     with st.chat_message("assistant"):
-        with st.spinner("🤔 Analyzing your mood..."):
+        with st.spinner("🤔 Menganalisis mood Anda..."):
             
             try:
-                # Step 1: Analyze mood with conversation history
+                # Step 1: Analyze mood with conversation history using ContextManager
                 logger.info("Step 1: Analyzing mood...")
                 mood_start = time.time()
                 
-                # Get conversation history (exclude the current message we just added)
+                # Build context using ContextManager
                 conversation_history = st.session_state.messages[:-1] if len(st.session_state.messages) > 1 else []
                 logger.debug(f"Using {len(conversation_history)} previous messages as context")
                 
@@ -313,73 +579,38 @@ def handle_user_input(
                 
                 SessionManager.update_mood(mood_result)
                 
-                # Display mood analysis
-                display_mood_analysis(mood_result)
+                # Display mood analysis inline
+                render_mood_analysis_inline(mood_result)
                 
-                # Step 2: Search movies
-                st.markdown("---")
-                st.markdown("### 🎬 Recommended Movies")
-                
+                # Step 2: Ask for confirmation before searching movies
                 recommended_genres = mood_result.get('recommended_genres', ['Comedy'])
-                logger.info(f"Step 2: Searching movies for genres: {recommended_genres}")
+                mood_summary = mood_result.get('summary', '')
                 
-                with st.spinner("🔍 Searching for perfect movies..."):
-                    search_start = time.time()
-                    movies = movie_searcher.search_by_genres(
-                        recommended_genres,
-                        limit=5,
-                        personalize=True
-                    )
-                    search_duration = time.time() - search_start
-                    logger.info(f"Movie search completed in {search_duration:.2f}s - Found {len(movies)} movies")
+                logger.info(f"Step 2: Asking for confirmation for genres: {recommended_genres}")
                 
-                if movies:
-                    # Process each movie with review summary first
-                    logger.debug("Processing movie reviews...")
-                    processed_movies = []
-                    for idx, movie in enumerate(movies, 1):
-                        logger.debug(f"Processing movie {idx}/{len(movies)}: {movie.get('title', 'Unknown')}")
-                        # Get review summary
-                        raw_reviews = movie.get('raw_payload', {}).get('raw_reviews')
-                        review_start = time.time()
-                        review_summary = review_summarizer.summarize(raw_reviews)
-                        review_duration = time.time() - review_start
-                        logger.debug(f"Review summary generated in {review_duration:.2f}s")
-                        
-                        # Add review to movie dict
-                        movie['review_summary'] = review_summary
-                        processed_movies.append(movie)
-                        
-                        # Display movie card
-                        display_movie_card(movie, idx)
-                        
-                        # Display review
-                        st.markdown(f"**💬 Netizen:** {review_summary}")
-                        st.markdown("---")
-                    
-                    # Save processed recommendations (with review summaries) to session
-                    logger.debug(f"Saving {len(processed_movies)} processed recommendations to session...")
-                    SessionManager.add_recommendations(processed_movies)
-                    
-                    response_text = f"Found {len(movies)} great movies for you! Check them out above 👆"
-                    logger.info(f"Successfully displayed {len(movies)} movie recommendations")
-                    
-                else:
-                    logger.warning("No movies found for recommended genres")
-                    response_text = "Sorry, couldn't find movies matching your mood. Try being more specific!"
+                # Store pending confirmation
+                SessionManager.set_pending_confirmation({
+                    'genres': recommended_genres,
+                    'mood_result': mood_result
+                })
                 
-                st.success(response_text)
+                # Display confirmation prompt
+                render_confirmation_prompt(recommended_genres, mood_summary)
                 
-                # Add assistant message
-                assistant_message = f"""**Mood Analysis:**
-Detected: {', '.join(mood_result.get('detected_moods', []))}
-Intensity: {mood_result.get('intensity_score', 0)}%
+                # Add assistant message with confirmation
+                confirmation_message = f"""**Analisis Mood:**
+Mood terdeteksi: {', '.join(mood_result.get('detected_moods', []))}
+Intensitas: {mood_result.get('intensity_score', 0)}%
 
-{mood_result.get('summary', '')}
+{mood_summary}
 
-**Recommendations:** Found {len(movies)} movies!"""
+Berdasarkan mood Anda, saya bisa merekomendasikan film dengan genre: {', '.join(recommended_genres)}. Apakah Anda ingin melihat rekomendasi film?"""
                 
-                SessionManager.add_message("assistant", assistant_message)
+                SessionManager.add_message("assistant", confirmation_message, metadata={
+                    "type": "confirmation",
+                    "genres": recommended_genres,
+                    "mood_result": mood_result
+                })
                 
                 total_duration = time.time() - start_time
                 logger.info(f"=== User input processing completed in {total_duration:.2f}s ===")
@@ -388,8 +619,94 @@ Intensity: {mood_result.get('intensity_score', 0)}%
                 total_duration = time.time() - start_time
                 logger.exception(f"Error processing user input (duration: {total_duration:.2f}s)")
                 logger.error(f"Error details: {type(e).__name__}: {str(e)}")
-                st.error(f"❌ Oops! Something went wrong: {str(e)}")
-                st.info("💡 Try again or check the logs")
+                st.error(f"❌ Oops! Terjadi kesalahan: {str(e)}")
+                st.info("💡 Coba lagi atau periksa log")
+                SessionManager.add_message("assistant", f"Maaf, terjadi kesalahan: {str(e)}")
+
+def handle_movie_search(
+    recommended_genres: List[str],
+    mood_result: Dict[str, Any],
+    mood_analyzer: MoodAnalyzer,
+    movie_searcher: MovieSearcher,
+    review_summarizer: ReviewSummarizer
+):
+    """
+    Handle movie search and display recommendations
+    
+    Args:
+        recommended_genres: List of genre names
+        mood_result: Mood analysis result
+        mood_analyzer: Mood analyzer instance
+        movie_searcher: Movie searcher instance
+        review_summarizer: Review summarizer instance
+    """
+    import time
+    import hashlib
+    
+    logger.info(f"Searching movies for genres: {recommended_genres}")
+    
+    with st.spinner("🔍 Mencari film yang sempurna untuk Anda..."):
+        # Create context hash from mood for cache uniqueness
+        context_string = f"{mood_result.get('detected_moods', [])}-{mood_result.get('intensity_score', 0)}-{recommended_genres}"
+        context_hash = hashlib.md5(context_string.encode()).hexdigest()[:12]
+        logger.debug(f"Context hash for search: {context_hash}")
+        
+        search_start = time.time()
+        movies = movie_searcher.search_by_genres(
+            recommended_genres,
+            limit=5,
+            personalize=True,
+            context_hash=context_hash
+        )
+        search_duration = time.time() - search_start
+        logger.info(f"Movie search completed in {search_duration:.2f}s - Found {len(movies)} movies")
+    
+    if movies:
+        # Process each movie with review summary
+        logger.debug("Processing movie reviews...")
+        processed_movies = []
+        
+        for idx, movie in enumerate(movies, 1):
+            logger.debug(f"Processing movie {idx}/{len(movies)}: {movie.get('title', 'Unknown')}")
+            
+            # Get review summary
+            raw_reviews = movie.get('raw_payload', {}).get('raw_reviews')
+            if raw_reviews:
+                review_start = time.time()
+                review_summary = review_summarizer.summarize(raw_reviews)
+                review_duration = time.time() - review_start
+                logger.debug(f"Review summary generated in {review_duration:.2f}s")
+                movie['review_summary'] = review_summary
+            else:
+                movie['review_summary'] = "Belum ada review dari netizen"
+            
+            processed_movies.append(movie)
+        
+        # Display movies using chat components
+        render_movie_recommendation(processed_movies)
+        
+        # Save processed recommendations to session
+        logger.debug(f"Saving {len(processed_movies)} processed recommendations to session...")
+        SessionManager.add_recommendations(processed_movies)
+        
+        # Add assistant message with recommendations
+        response_text = f"Saya menemukan {len(movies)} film yang cocok untuk Anda! 🎬"
+        st.success(response_text)
+        
+        SessionManager.add_message("assistant", response_text, metadata={
+            "type": "recommendation",
+            "movies": processed_movies,
+            "genres": recommended_genres
+        })
+        
+        logger.info(f"Successfully displayed {len(movies)} movie recommendations")
+    
+    else:
+        logger.warning("No movies found for recommended genres")
+        response_text = "Maaf, saya tidak menemukan film yang sesuai dengan mood Anda. Coba beri tahu saya lebih spesifik tentang genre atau mood yang Anda inginkan!"
+        st.info(response_text)
+        
+        SessionManager.add_message("assistant", response_text)
 
 # ====================== FOOTER ======================
 

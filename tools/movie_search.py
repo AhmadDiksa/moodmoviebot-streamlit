@@ -28,7 +28,8 @@ class MovieSearcher:
         self, 
         genre_names: List[str],
         limit: int = 5,
-        personalize: bool = True
+        personalize: bool = True,
+        context_hash: str = None
     ) -> List[Dict[str, Any]]:
         """
         Search movies by genre names
@@ -37,18 +38,24 @@ class MovieSearcher:
             genre_names: List of genre names (e.g., ["Action", "Comedy"])
             limit: Maximum number of results to return
             personalize: Apply user preferences for ranking
+            context_hash: Optional hash of user input/context for cache key uniqueness
         
         Returns:
             List of movie dictionaries with scores
         """
         import time
+        import hashlib
         start_time = time.time()
         
         logger.info(f"Searching movies - Genres: {genre_names}, Limit: {limit}, Personalize: {personalize}")
         
         try:
-            # Check cache first
-            cache_key = f"{'-'.join(sorted(genre_names))}-{limit}"
+            # Create cache key with context hash for uniqueness
+            # Include context_hash to ensure different contexts get different results
+            if context_hash:
+                cache_key = f"{'-'.join(sorted(genre_names))}-{limit}-{context_hash}"
+            else:
+                cache_key = f"{'-'.join(sorted(genre_names))}-{limit}"
             logger.debug(f"Checking cache with key: {cache_key}")
             cached = StreamlitCache.get("movie_search", cache_key)
             if cached and not personalize:
@@ -75,12 +82,37 @@ class MovieSearcher:
                 logger.warning("No movies found in database")
                 return []
             
+            # Get previously recommended movies to avoid duplicates
+            previously_recommended = set()
+            if st.session_state.get('recommendations'):
+                for prev_movie in st.session_state.recommendations:
+                    prev_title = prev_movie.get('title')
+                    if prev_title:
+                        previously_recommended.add(prev_title)
+            
+            if previously_recommended:
+                logger.debug(f"Excluding {len(previously_recommended)} previously recommended movies")
+            
+            # Filter out previously recommended movies
+            filtered_movies = [
+                m for m in movies 
+                if m.get('title') not in previously_recommended
+            ]
+            
+            # If we filtered too many, use original list but log it
+            if len(filtered_movies) < limit and len(movies) > len(filtered_movies):
+                logger.debug(f"Only {len(filtered_movies)} movies after filtering, using original list")
+                filtered_movies = movies
+            
+            logger.debug(f"After filtering duplicates: {len(filtered_movies)} movies available")
+            
             # Score and rank
-            logger.debug(f"Scoring and ranking {len(movies)} movies...")
+            logger.debug(f"Scoring and ranking {len(filtered_movies)} movies...")
             scored_movies = self._score_and_rank(
-                movies, 
+                filtered_movies, 
                 limit=limit,
-                personalize=personalize
+                personalize=personalize,
+                context_hash=context_hash
             )
             logger.debug(f"Ranked to {len(scored_movies)} movies")
             
@@ -107,7 +139,8 @@ class MovieSearcher:
         self,
         movies: List[Dict[str, Any]],
         limit: int = 5,
-        personalize: bool = True
+        personalize: bool = True,
+        context_hash: str = None
     ) -> List[Dict[str, Any]]:
         """
         Score and rank movies
@@ -116,12 +149,23 @@ class MovieSearcher:
             movies: List of movie payloads from Qdrant
             limit: Maximum number to return
             personalize: Apply personalization
+            context_hash: Optional context hash for adding variation
         
         Returns:
             Sorted list of movies with scores
         """
+        import random
         logger.debug(f"Scoring {len(movies)} movies (limit: {limit}, personalize: {personalize})")
         scored = []
+        
+        # Use context_hash to seed random for consistent but varied results
+        if context_hash:
+            try:
+                # Use hash to create a seed for randomness
+                seed = int(context_hash[:8], 16) if len(context_hash) >= 8 else hash(context_hash)
+                random.seed(seed)
+            except:
+                pass
         
         for idx, movie in enumerate(movies):
             # Base score from ratings
@@ -135,6 +179,10 @@ class MovieSearcher:
                 (popularity * 0.003) +
                 min(vote_count / 1000, 1.0) * 0.5
             )
+            
+            # Add small random variation to break ties and add diversity
+            # This ensures different contexts get slightly different rankings
+            variation = random.uniform(-0.1, 0.1) if context_hash else 0.0
             
             # Personalization bonus/penalty
             personalization_score = 0.0
@@ -154,10 +202,10 @@ class MovieSearcher:
                 personalization_score = (preferred_match * 0.5) - (disliked_match * 0.8)
                 
                 if idx < 3:  # Log first 3 for debugging
-                    logger.debug(f"Movie {idx+1}: {movie.get('title', 'Unknown')[:30]} - Base: {base_score:.2f}, Personalization: {personalization_score:.2f}")
+                    logger.debug(f"Movie {idx+1}: {movie.get('title', 'Unknown')[:30]} - Base: {base_score:.2f}, Personalization: {personalization_score:.2f}, Variation: {variation:.2f}")
             
-            # Final score
-            final_score = base_score + personalization_score
+            # Final score with variation
+            final_score = base_score + personalization_score + variation
             
             # Create result entry
             scored.append({
