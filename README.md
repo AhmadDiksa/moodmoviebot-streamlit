@@ -303,9 +303,9 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file.
 
 ## Our Teams
 
-- **GitHub**: [@AhmadDiksa](https://github.com/AhmadDiksa)
-- **Email**: your.email@example.com
-- **Twitter**: [@yourhandle](https://twitter.com/yourhandle)
+- **fullstack**: [@AhmadDiksa](https://github.com/AhmadDiksa)
+- **Frontend**: [@Rangggase](https://github.com/Rangggase)
+- **Backend**: [@paulentta](https://github.com/paulentta)
 
 ## 🌟 Star History
 
