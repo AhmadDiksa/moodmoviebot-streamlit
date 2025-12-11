@@ -80,6 +80,10 @@ Open http://localhost:8501 in your browser!
    - Get key: https://platform.openai.com/api-keys
    - Pay-as-you-go pricing
 
+5. **TMDB API Key** (Untuk setup data film)
+   - Get free key: https://www.themoviedb.org/settings/api
+   - Free tier: Unlimited requests (with rate limits)
+
 ## 📦 Project Structure
 
 ```
@@ -109,6 +113,7 @@ moodmoviebot-streamlit/
 │   └── genre_utils.py        # Genre utilities
 ├── logs/                     # Application logs
 ├── data/                     # Data directory
+├── Store_Qdrant.ipynb        # Data preparation notebook (TMDB to Qdrant)
 └── README.md                 # This file
 ```
 
@@ -120,6 +125,53 @@ moodmoviebot-streamlit/
 - **Framework**: LangChain
 - **Embeddings**: sentence-transformers (paraphrase-multilingual-MiniLM-L12-v2)
 - **Language**: Python 3.11+
+- **Data Source**: TMDB API
+
+## 🗄️ Data Setup
+
+Aplikasi ini memerlukan data film yang disimpan di Qdrant Cloud. Gunakan notebook `Store_Qdrant.ipynb` untuk mengisi database.
+
+### Setup Data Film ke Qdrant
+
+1. **Buka notebook `Store_Qdrant.ipynb`**
+
+2. **Install dependencies** (jika belum):
+```bash
+pip install qdrant-client requests langchain-huggingface langchain-community sentence-transformers
+```
+
+3. **Konfigurasi API Keys** di dalam notebook:
+```python
+TMDB_KEY = "your_tmdb_api_key"
+QDRANT_URL = "https://your-instance.cloud.qdrant.io"
+QDRANT_API_KEY = "your_qdrant_api_key"
+```
+
+4. **Jalankan notebook** untuk:
+   - Mengambil data film dari TMDB API (500 film per genre)
+   - Membuat embeddings menggunakan HuggingFace (all-MiniLM-L6-v2)
+   - Menyimpan ke Qdrant Cloud dengan metadata lengkap:
+     - Title, overview, release date
+     - Genre IDs, ratings, popularity
+     - Poster URL, trailer URL
+     - Raw reviews dari TMDB
+
+### Fitur Notebook
+
+- ✅ **Resume Support**: Skip genre yang sudah selesai diproses
+- ✅ **Retry Logic**: Auto-retry jika upload gagal
+- ✅ **Duplicate Detection**: Otomatis skip film duplikat
+- ✅ **Progress Tracking**: Real-time progress per genre
+- ✅ **Error Handling**: Robust error handling dengan timeout
+
+### Collection Structure
+
+- **Collection Name**: `moodviedb`
+- **Vector Size**: 384 (all-MiniLM-L6-v2)
+- **Distance Metric**: Cosine
+- **Indexed Fields**: `genre_ids`, `vote_average`
+
+**Note**: Proses ini memakan waktu beberapa jam tergantung jumlah genre. Notebook sudah dilengkapi dengan fitur resume untuk melanjutkan dari genre yang belum selesai.
 
 ## 🎯 Usage
 
@@ -249,9 +301,9 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file.
 - LangChain for LLM orchestration
 - sentence-transformers for multilingual embeddings
 
-## 📧 Contact
+## Our Teams
 
-- **GitHub**: [@yourusername](https://github.com/yourusername)
+- **GitHub**: [@AhmadDiksa](https://github.com/AhmadDiksa)
 - **Email**: your.email@example.com
 - **Twitter**: [@yourhandle](https://twitter.com/yourhandle)
 
