@@ -28,13 +28,13 @@
 
 ### Try Online (No Installation)
 
-Visit: [MoodMovieBot Live Demo](https://your-app-url.streamlit.app)
+Visit: [MoodMovieBot Live Demo](https://moodmoviebot.streamlit.app/)
 
 ### Run Locally
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/yourusername/moodmoviebot-streamlit.git
+git clone https://github.com/AhmadDiksa/moodmoviebot-streamlit
 cd moodmoviebot-streamlit
 
 # 2. Create virtual environment
